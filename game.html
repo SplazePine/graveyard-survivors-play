@@ -29,18 +29,24 @@
 <div id="loading">Graveyard Survivors<div class="dot"></div></div>
 <canvas id="c" tabindex="0" aria-label="Graveyard Survivors. Move with WASD, arrows, mouse or drag. Weapons attack by themselves."></canvas>
 <button id="mute" class="ctl" data-control aria-label="Sound" aria-pressed="false">🔊</button>
-<a id="open" class="ctl" data-control href="game.html?v=1" aria-label="Open the game in a new tab">↗</a>
+<a id="open" class="ctl" data-control href="game.html?v=2" aria-label="Open the game in a new tab">↗</a>
 <script>
 "use strict";
 // =====================================================================
-// GRAVEYARD SURVIVORS v0.1 - Splazetown. Plain JavaScript + canvas, no libraries.
+// GRAVEYARD SURVIVORS v0.2 - Splazetown. Plain JavaScript + canvas, no libraries.
 // All art is drawn from the pixel strings in ART (tools/art.json), all text with our own FONT.
 // =====================================================================
-const ART = {"pal":{"k":"#140c1c","K":"#2e1f45","p":"#5b3a8a","P":"#9b6ad6","g":"#2f5a3a","G":"#5fae4e","l":"#b8e86a","o":"#e06d1e","O":"#ffa43a","y":"#ffe066","w":"#f4f0e8","s":"#f0b88a","S":"#c07a5a","b":"#6b4226","B":"#9c6a3c","r":"#a8222c","R":"#ff4d4d","c":"#6fd6e8","C":"#2f7f9a","x":"#7d7a92","X":"#c8c6d8","z":"#45405a","n":"#1d2b5a","N":"#3c56a6","m":"#e89ab8","e":"#3a2a20"},"spr":{"mort0":["...kkkkk....","..kbbbbbk...","..kbBBbbk...",".kkkkkkkkk..","..kssskssk..","..kssssssk..","..kXXXXXXk..","...kXXXXk...","..kgggggk...",".kgGggggsk..",".kgGgggksk..",".kgggggk.kk.","..kgggk.kyOk","..kekek.kOyk","..kk.kk..kk.","............"],"mort1":["...kkkkk....","..kbbbbbk...","..kbBBbbk...",".kkkkkkkkk..","..kssskssk..","..kssssssk..","..kXXXXXXk..","...kXXXXk...","..kgggggk...",".kgGggggsk..",".kgGgggksk..",".kgggggk.kk.","..kgggk.kyOk","...keek.kOyk","...kkkk..kk.","............"],"granny0":["...kkkk.....","..kXXXXk....",".kXXXXXXk...",".kXsssskk.y.",".kssskssk.O.","..kssssk..w.","..kpppppk.w.",".kpPpppppsw.",".kpPppppk.k.",".kppppppk...","..kKKKKKk...",".kKKKKKKKk..",".kKKKKKKKk..","..kKKKKKk...","..kk...kk...","............"],"granny1":["...kkkk.....","..kXXXXk....",".kXXXXXXk...",".kXsssskk.y.",".kssskssk.O.","..kssssk..w.","..kpppppk.w.",".kpPpppppsw.",".kpPppppk.k.",".kppppppk...","..kKKKKKk...",".kKKKKKKKk..",".kKKKKKKKk..","..kKKKKKk...","...kk.kk....","............"],"brussard":["...kkkkk....","..kbbbbbk...","kkbbbbbbbkk.","kkkkkkkkkkk.","..kssskssk..","..kbbbbbbk..","...kbbbbk...","..knnnnnk...",".knNnnnnkkkk",".knNnnnsxxxx",".knnnnnkkkk.",".knnnnnk....",".knnnnnk....","..knkknk....","..kk..kk....","............"],"angelle":["...kkkk.....","..kbbbbk....",".kbbbbbbk...",".kbsskssk...",".kbssssbk.y.",".kbbsssbkyyy","..kwwwwwk.y.",".kwNwwwwssy.",".kwNwwwwk.y.",".kwwwwwwk...",".kNwwwwwNk..",".kwwwwwwwk..","kwwwwwwwwwk.",".kkkkkkkkk..","...kk.kk....","............"],"bat0":["kk.......kk","kpk.k.k.kpk","kppkpppkppk",".kppRpRppk.","..kkpppkk..","....kpk....","..........."],"bat1":["...........","....k.k....","...kpppk...",".kkpRpRpkk.","kpppppppppk","kpk.kpk.kpk","k....k....k"],"shambler0":["..kkkk....",".kGGGGk...",".kGkGRk...",".kGGGGk...","..kggk....",".kbbbbkkkk","kbbBbbGGGk","kbbbbbkkk.","kbbbbbk...",".kNNNNk...",".kNNNNk...",".kNk.kNk..",".kk..kk...",".........."],"shambler1":["..kkkk....",".kGGGGk...",".kGkGRk...",".kGGGGk...","..kggk....",".kbbbbkkkk","kbbBbbGGGk","kbbbbbkkk.","kbbbbbk...",".kNNNNk...",".kNNNNk...","..kNkNk...","..kk.kk...",".........."],"wisp0":["....k....","...kck...","..kcwck..","..kcwck..",".kcwwwck.",".kckwkck.",".kcwwwck.",".kccwcck.","..kcccck.","..kck.kc.","...k...k."],"wisp1":["....k....","...kck...","..kcwck..","..kcwck..",".kcwwwck.",".kckwkck.",".kcwwwck.",".kccwcck.",".kcccck..",".ck.kck..",".k...k..."],"crawler0":[".........kkk.","........kXXXk","..kkkkkkXkXkk",".kXkXkXkXXXk.","kXXXXXXXXkk..",".kXk.kXk.kXk.",".k....k...k..","............."],"crawler1":[".........kkk.","........kXXXk","..kkkkkkXkXkk",".kXkXkXkXXXk.","kXXXXXXXXkk..","..kXk.kXk.kX.","..k....k...k.","............."],"gourd0":["....kgk...","..kkkgkkk.",".kooOoOook","kooykooyok","koooooooOk","kooykykyok",".kooooook.","..kkkkkk..","..kb..bk..","..k....k.."],"gourd1":["....kgk...","..kkkgkkk.",".kooOoOook","kooykooyok","koooooooOk","kooykykyok",".kooooook.","..kkkkkk..","...kbbk...","...k..k..."],"beelz":["kk....................kk","kRk..................kRk","kRrk................krRk",".kRrk......kk......krRk.",".kRrrk....kgGk....krrRk.","..krrrkkkkkggkkkkkrrrk..","..kooOOooookkooooOOook..",".kooOOOoookookoooOOOook.","kooOOkkkookookookkkOOook","koOOkyyykookookokyyykOok","koOOokyykoookooookyykOok","koOOookkoooooooooookkOok","koOkkkkkkkkkkkkkkkkkkOok","koOkyyyyyyyyyyyyyyykOook","kooOkyykyykyykyykkOOoook",".kooOkkkkkkkkkkkkkOOook.","..kkooooooooooooooookk..","...kkkkkkkkkkkkkkkkkk...","....krrKKKKKKKKKKrrk....","...krKKKKpKKKKpKKKKrk...","..kRrKKKKKKKKKKKKKKrRk..",".kRk.kKKKKKKKKKKKKk.kRk.","kRRk.kKKKKKKKKKKKKk.kRRk",".kk..kKKKKKkkKKKKKk..kk.",".....kkkkk..kkkkk.......","........................"],"crown":["y..y..y","yy.y.yy","yyyyyyy","kkkkkkk"],"candy":["..k..",".kok.","koOok",".kok.","..k.."],"flame0":["..y..",".yOy.",".yOy.","yOrOy","yOrOy",".yOy.","..k.."],"flame1":["..y..","..y..",".yOy.","yOrOy","yOrOy",".yOy.","..k.."],"fireball":[".rOr.","rOyOr","OyyyO","rOyOr",".rOr."],"wail":[".ccc.","c...c","c.w.c","c...c",".ccc."],"rock":[".kk.","kxXk","kxxk",".kk."],"shovel":["......kk",".....kbk","....kbk.","...kbk..","kkkbk...","kXXk....","kXXXk...",".kkk...."],"lantern":["..kkkk..","..k..k..",".kkkkkk.",".kyOOyk.",".kOyyOk.",".kyOOyk.",".kkkkkk.","..kkkk.."],"whip":["kb......","kbb.....",".kbk....","..kb..bk","..kb.b..","...bb...","........","........"],"candle":["...y....","..yOy...","..yOy...","...k....","..www...","..wXw...","..www...",".kkkkk.."],"boots":["........","..kkk...","..kbk...","..kbk...","..kbkk..","..kbbbk.","..kkkkk.","........"],"stew":["...w.w..","..w.w...","........","kkkkkkkk","kBBBBBBk",".kbbbbk.","..kkkk..","........"],"tea":["...c....","..c.c...","........",".kkkkk..",".kwwwkkk",".kwwwk.k",".kwwwkkk","..kkk..."],"heart":[".kk.kk.","kRRkRRk","kRRRRRk",".kRRRk.","..kRk..","...k..."],"skullicon":[".kkkkk.","kXXXXXk","kXkXkXk","kXXXXXk",".kXkXk.","..kkk.."],"tomb":["..kkkkkk..",".kxXXXXxk.","kxXXXXXXxk","kxXkkkkXxk","kxXXXXXXxk","kxXkkkkXxk","kxXXXXXXxk","kxXXXXXXxk","kxxxxxxxxk","kzzzzzzzzk","gGgGgGgGgg"],"cross":["..kkk..","..kXk..","kkkXkkk","kXXXXXk","kkkXkkk","..kXk..","..kXk..","..kXk..","..kxk..",".kkzkk.","gGgggGg"],"fence":[".k...k...k...k..","kxk.kxk.kxk.kxk.",".x...x...x...x..","kxkkkxkkkxkkkxkk",".x...x...x...x..",".x...x...x...x..","kxkkkxkkkxkkkxkk",".x...x...x...x..",".x...x...x...x..",".k...k...k...k.."],"tuft":["..G..","G.G.G",".gGg."],"bones":[".X...X.","XkX.XkX","..XXX..","XkX.XkX",".X...X."],"pumpkin":["...g...",".kokok.","kOyoyOk","koooook","kOykyOk",".kkkkk."],"apple":["...bg..","..kbk..",".kRRRk.","kRRwRRk","kRRRRRk","kRRRRrk",".kkkkk."]}};
+const ART = {"pal":{"k":"#140c1c","K":"#2e1f45","p":"#5b3a8a","P":"#9b6ad6","g":"#2f5a3a","G":"#5fae4e","l":"#b8e86a","o":"#e06d1e","O":"#ffa43a","y":"#ffe066","w":"#f4f0e8","s":"#f0b88a","S":"#c07a5a","b":"#6b4226","B":"#9c6a3c","r":"#a8222c","R":"#ff4d4d","c":"#6fd6e8","C":"#2f7f9a","x":"#7d7a92","X":"#c8c6d8","z":"#45405a","n":"#1d2b5a","N":"#3c56a6","m":"#e89ab8","e":"#3a2a20"},"spr":{"mort0":["...kkkkk....","..kbbbbbk...","..kbBBbbk...",".kkkkkkkkk..","..kssskssk..","..kssssssk..","..kXXXXXXk..","...kXXXXk...","..kgggggk...",".kgGggggsk..",".kgGgggksk..",".kgggggk.kk.","..kgggk.kyOk","..kekek.kOyk","..kk.kk..kk.","............"],"mort1":["...kkkkk....","..kbbbbbk...","..kbBBbbk...",".kkkkkkkkk..","..kssskssk..","..kssssssk..","..kXXXXXXk..","...kXXXXk...","..kgggggk...",".kgGggggsk..",".kgGgggksk..",".kgggggk.kk.","..kgggk.kyOk","...keek.kOyk","...kkkk..kk.","............"],"granny0":["...kkkk.....","..kXXXXk....",".kXXXXXXk...",".kXsssskk.y.",".kssskssk.O.","..kssssk..w.","..kpppppk.w.",".kpPpppppsw.",".kpPppppk.k.",".kppppppk...","..kKKKKKk...",".kKKKKKKKk..",".kKKKKKKKk..","..kKKKKKk...","..kk...kk...","............"],"granny1":["...kkkk.....","..kXXXXk....",".kXXXXXXk...",".kXsssskk.y.",".kssskssk.O.","..kssssk..w.","..kpppppk.w.",".kpPpppppsw.",".kpPppppk.k.",".kppppppk...","..kKKKKKk...",".kKKKKKKKk..",".kKKKKKKKk..","..kKKKKKk...","...kk.kk....","............"],"brussard":["...kkkkk....","..kbbbbbk...","kkbbbbbbbkk.","kkkkkkkkkkk.","..kssskssk..","..kbbbbbbk..","...kbbbbk...","..knnnnnk...",".knNnnnnkkkk",".knNnnnsxxxx",".knnnnnkkkk.",".knnnnnk....",".knnnnnk....","..knkknk....","..kk..kk....","............"],"angelle":["...kkkk.....","..kbbbbk....",".kbbbbbbk...",".kbsskssk...",".kbssssbk.y.",".kbbsssbkyyy","..kwwwwwk.y.",".kwNwwwwssy.",".kwNwwwwk.y.",".kwwwwwwk...",".kNwwwwwNk..",".kwwwwwwwk..","kwwwwwwwwwk.",".kkkkkkkkk..","...kk.kk....","............"],"bat0":["kk.......kk","kpk.k.k.kpk","kppkpppkppk",".kppRpRppk.","..kkpppkk..","....kpk....","..........."],"bat1":["...........","....k.k....","...kpppk...",".kkpRpRpkk.","kpppppppppk","kpk.kpk.kpk","k....k....k"],"shambler0":["..kkkk....",".kGGGGk...",".kGkGRk...",".kGGGGk...","..kggk....",".kbbbbkkkk","kbbBbbGGGk","kbbbbbkkk.","kbbbbbk...",".kNNNNk...",".kNNNNk...",".kNk.kNk..",".kk..kk...",".........."],"shambler1":["..kkkk....",".kGGGGk...",".kGkGRk...",".kGGGGk...","..kggk....",".kbbbbkkkk","kbbBbbGGGk","kbbbbbkkk.","kbbbbbk...",".kNNNNk...",".kNNNNk...","..kNkNk...","..kk.kk...",".........."],"wisp0":["....k....","...kck...","..kcwck..","..kcwck..",".kcwwwck.",".kckwkck.",".kcwwwck.",".kccwcck.","..kcccck.","..kck.kc.","...k...k."],"wisp1":["....k....","...kck...","..kcwck..","..kcwck..",".kcwwwck.",".kckwkck.",".kcwwwck.",".kccwcck.",".kcccck..",".ck.kck..",".k...k..."],"crawler0":[".........kkk.","........kXXXk","..kkkkkkXkXkk",".kXkXkXkXXXk.","kXXXXXXXXkk..",".kXk.kXk.kXk.",".k....k...k..","............."],"crawler1":[".........kkk.","........kXXXk","..kkkkkkXkXkk",".kXkXkXkXXXk.","kXXXXXXXXkk..","..kXk.kXk.kX.","..k....k...k.","............."],"gourd0":["....kgk...","..kkkgkkk.",".kooOoOook","kooykooyok","koooooooOk","kooykykyok",".kooooook.","..kkkkkk..","..kb..bk..","..k....k.."],"gourd1":["....kgk...","..kkkgkkk.",".kooOoOook","kooykooyok","koooooooOk","kooykykyok",".kooooook.","..kkkkkk..","...kbbk...","...k..k..."],"beelz":["kk....................kk","kRk..................kRk","kRrk................krRk",".kRrk......kk......krRk.",".kRrrk....kgGk....krrRk.","..krrrkkkkkggkkkkkrrrk..","..kooOOooookkooooOOook..",".kooOOOoookookoooOOOook.","kooOOkkkookookookkkOOook","koOOkyyykookookokyyykOok","koOOokyykoookooookyykOok","koOOookkoooooooooookkOok","koOkkkkkkkkkkkkkkkkkkOok","koOkyyyyyyyyyyyyyyykOook","kooOkyykyykyykyykkOOoook",".kooOkkkkkkkkkkkkkOOook.","..kkooooooooooooooookk..","...kkkkkkkkkkkkkkkkkk...","....krrKKKKKKKKKKrrk....","...krKKKKpKKKKpKKKKrk...","..kRrKKKKKKKKKKKKKKrRk..",".kRk.kKKKKKKKKKKKKk.kRk.","kRRk.kKKKKKKKKKKKKk.kRRk",".kk..kKKKKKkkKKKKKk..kk.",".....kkkkk..kkkkk.......","........................"],"crown":["y..y..y","yy.y.yy","yyyyyyy","kkkkkkk"],"candy":["..k..",".kok.","koOok",".kok.","..k.."],"flame0":["..y..",".yOy.",".yOy.","yOrOy","yOrOy",".yOy.","..k.."],"flame1":["..y..","..y..",".yOy.","yOrOy","yOrOy",".yOy.","..k.."],"fireball":[".rOr.","rOyOr","OyyyO","rOyOr",".rOr."],"wail":[".ccc.","c...c","c.w.c","c...c",".ccc."],"rock":[".kk.","kxXk","kxxk",".kk."],"shovel":["......kk",".....kbk","....kbk.","...kbk..","kkkbk...","kXXk....","kXXXk...",".kkk...."],"lantern":["..kkkk..","..k..k..",".kkkkkk.",".kyOOyk.",".kOyyOk.",".kyOOyk.",".kkkkkk.","..kkkk.."],"whip":["kb......","kbb.....",".kbk....","..kb..bk","..kb.b..","...bb...","........","........"],"candle":["...y....","..yOy...","..yOy...","...k....","..www...","..wXw...","..www...",".kkkkk.."],"boots":["........","..kkk...","..kbk...","..kbk...","..kbkk..","..kbbbk.","..kkkkk.","........"],"stew":["...w.w..","..w.w...","........","kkkkkkkk","kBBBBBBk",".kbbbbk.","..kkkk..","........"],"tea":["...c....","..c.c...","........",".kkkkk..",".kwwwkkk",".kwwwk.k",".kwwwkkk","..kkk..."],"heart":[".kk.kk.","kRRkRRk","kRRRRRk",".kRRRk.","..kRk..","...k..."],"skullicon":[".kkkkk.","kXXXXXk","kXkXkXk","kXXXXXk",".kXkXk.","..kkk.."],"tomb":["..kkkkkk..",".kxXXXXxk.","kxXXXXXXxk","kxXkkkkXxk","kxXXXXXXxk","kxXkkkkXxk","kxXXXXXXxk","kxXXXXXXxk","kxxxxxxxxk","kzzzzzzzzk","gGgGgGgGgg"],"cross":["..kkk..","..kXk..","kkkXkkk","kXXXXXk","kkkXkkk","..kXk..","..kXk..","..kXk..","..kxk..",".kkzkk.","gGgggGg"],"fence":[".k...k...k...k..","kxk.kxk.kxk.kxk.",".x...x...x...x..","kxkkkxkkkxkkkxkk",".x...x...x...x..",".x...x...x...x..","kxkkkxkkkxkkkxkk",".x...x...x...x..",".x...x...x...x..",".k...k...k...k.."],"tuft":["..G..","G.G.G",".gGg."],"bones":[".X...X.","XkX.XkX","..XXX..","XkX.XkX",".X...X."],"pumpkin":["...g...",".kokok.","kOyoyOk","koooook","kOykyOk",".kkkkk."],"apple":["...bg..","..kbk..",".kRRRk.","kRRwRRk","kRRRRRk","kRRRRrk",".kkkkk."],"brussard1":["...kkkkk....","..kbbbbbk...","kkbbbbbbbkk.","kkkkkkkkkkk.","..kssskssk..","..kbbbbbbk..","...kbbbbk...","..knnnnnk...",".knNnnnnkkkk",".knNnnnsxxxx",".knnnnnkkkk.",".knnnnnk....",".knnnnnk....","...knnk.....","...kkkk.....","............"],"angelle1":["...kkkk.....","..kbbbbk....",".kbbbbbbk...",".kbsskssk...",".kbssssbk.y.",".kbbsssbkyyy","..kwwwwwk.y.",".kwNwwwwssy.",".kwNwwwwk.y.",".kwwwwwwk...",".kNwwwwwNk..",".kwwwwwwwk..","kwwwwwwwwwk.",".kkkkkkkkk..","....kkk.....","............"],"shotgun":["........","kkkkkk..","XXXXXXk.","xxxxxxbk","kkkkkbBk","....kbbk",".....kbk","......k."],"holycross":["...yy...","..ywwy..","yyywwyyy","ywwwwwwy","yyywwyyy","..ywwy..","..ywwy..","...yy..."],"fleur":["...y...","..yOy..",".y.y.y.","yO.y.Oy","y.yyy.y",".yyyyy.","...y...","..yOy..","...y..."],"vault":["......kk......",".....kXXk.....","....kXwwXk....","...kXwwwwXk...","..kkkkkkkkkk..","..kXwwwwwwXk..","..kXwkkkkwXk..","..kXwkzzkwXk..","..kXwkzzkwXk..","..kXwkzzkwXk..","..kXwkkkkwXk..","..kXwwwwwwXk..",".kkkkkkkkkkkk.",".kxxxxxxxxxxk.","gGgGgGgGgGgGgg"],"ironfence":[".y...y...y...y..","yzy.yzy.yzy.yzy.",".z...z...z...z..","kzkkkzkkkzkkkzkk",".z.z.z.z.z.z.z.z",".zz.zzz.zzz.zzz.",".z...z...z...z..","kzkkkzkkkzkkkzkk",".z...z...z...z..",".k...k...k...k.."],"mossoak":[".....gggggggggg.....","...ggGggggGgggggg...",".gggggggGgggggGgggg.","ggGgggggggggggggGggg","gggggGgggggGgggggggg",".gxggggbbbbggggggxg.",".xXg.xggbbgggx.gxXx.",".xX..xX.bb..xX..xX..","..X..xX.bb..xX...X..","..x...X.bb...X...x..","......x.bb...x......",".......xbb..........","........bB..........","........bB..........","........bB..........","........bB..........",".......bbBb.........","......bb.bbb........","gGgGgGgGgGgGgGgGgGgg"]}};
 const FONT = {"A":".###./#...#/#...#/#####/#...#/#...#/#...#","B":"####./#...#/#...#/####./#...#/#...#/####.","C":".###./#...#/#..../#..../#..../#...#/.###.","D":"####./#...#/#...#/#...#/#...#/#...#/####.","E":"#####/#..../#..../####./#..../#..../#####","F":"#####/#..../#..../####./#..../#..../#....","G":".###./#...#/#..../#.###/#...#/#...#/.####","H":"#...#/#...#/#...#/#####/#...#/#...#/#...#","I":"###/.#./.#./.#./.#./.#./###","J":"..###/...#./...#./...#./#..#./#..#./.##..","K":"#...#/#..#./#.#../##.../#.#../#..#./#...#","L":"#..../#..../#..../#..../#..../#..../#####","M":"#...#/##.##/#.#.#/#.#.#/#...#/#...#/#...#","N":"#...#/##..#/#.#.#/#..##/#...#/#...#/#...#","O":".###./#...#/#...#/#...#/#...#/#...#/.###.","P":"####./#...#/#...#/####./#..../#..../#....","Q":".###./#...#/#...#/#...#/#.#.#/#..#./.##.#","R":"####./#...#/#...#/####./#.#../#..#./#...#","S":".####/#..../#..../.###./....#/....#/####.","T":"#####/..#../..#../..#../..#../..#../..#..","U":"#...#/#...#/#...#/#...#/#...#/#...#/.###.","V":"#...#/#...#/#...#/#...#/#...#/.#.#./..#..","W":"#...#/#...#/#...#/#.#.#/#.#.#/#.#.#/.#.#.","X":"#...#/#...#/.#.#./..#../.#.#./#...#/#...#","Y":"#...#/#...#/.#.#./..#../..#../..#../..#..","Z":"#####/....#/...#./..#../.#.../#..../#####","0":".###./#...#/#..##/#.#.#/##..#/#...#/.###.","1":".#./##./.#./.#./.#./.#./###","2":".###./#...#/....#/...#./..#../.#.../#####","3":"####./....#/....#/.###./....#/....#/####.","4":"...#./..##./.#.#./#..#./#####/...#./...#.","5":"#####/#..../####./....#/....#/#...#/.###.","6":".###./#..../#..../####./#...#/#...#/.###.","7":"#####/....#/...#./..#../.#.../.#.../.#...","8":".###./#...#/#...#/.###./#...#/#...#/.###.","9":".###./#...#/#...#/.####/....#/....#/.###.",".":"./././././.#",",":"../../../../../.#/#.","!":"#/#/#/#/#/./#","?":".###./#...#/....#/...#./..#../...../..#..",":":"./././#/./#/.","-":".../.../.../###/.../.../...","+":"...../..#../..#../#####/..#../..#../.....","/":"....#/...#./...#./..#../.#.../.#.../#....","%":"##..#/##..#/...#./..#../.#.../#..##/#..##","'":"#/#/./././././","&":".##../#..#./#.#../.#.../#.#.#/#..#./.##.#","(":".#/#./#./#./#./#./.#",")":"#./.#/.#/.#/.#/.#/#.",">":"#.../.#../..#./...#/..#./.#../#...","<":"...#/..#./.#../#.../.#../..#./...#","=":"..../..../####/..../####/..../....","x":"...../...../#...#/.#.#./..#../.#.#./#...#"};
 const Q = new URLSearchParams(location.search);
 // Test-only switches (never needed by players): ?seed=N ?fast=1 ?god=1 ?stress=1 ?frail=1
 const FAST = Q.get("fast") === "1", GOD = Q.get("god") === "1", STRESS = Q.get("stress") === "1", FRAIL = Q.get("frail") === "1";
+// ?unlock=1 lives ONLY in the robot's test build (game.test.html). tools/build.py cuts the marked block out
+// of game.html, so real players unlock Brussard & Angelle only by beating Big Beelz with BOTH keepers.
+// The switch never writes to localStorage.
+const TEST_BUILD = false;
+let DEV_UNLOCK = false, START_HP = 0;
+
 let SEED = parseInt(Q.get("seed"), 10); if (!Number.isFinite(SEED)) SEED = (Math.random() * 1e9) | 0;
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 let rng = mulberry(SEED);
@@ -79,6 +85,7 @@ function addSprite(key, name, swap, sc) {     // n = normal, f = flipped, w/wf =
 }
 for (const k of Object.keys(ART.spr)) addSprite(k, k);
 addSprite("mortBig0", "mort0", null, 2); addSprite("grannyBig0", "granny0", null, 2);
+addSprite("brussard0", "brussard"); addSprite("angelle0", "angelle");
 addSprite("brussardBig", "brussard", null, 2); addSprite("angelleBig", "angelle", null, 2);
 SPR.lockedBig = { n: paint(ART.spr.brussard, null, 2, "#2e1f45"), W: 24, H: 32 };
 SPR.lockedBig2 = { n: paint(ART.spr.angelle, null, 2, "#3a2858"), W: 24, H: 32 };
@@ -91,6 +98,7 @@ addSprite("beelzBig", "beelz", null, 2); addSprite("crownBig", "crown", null, 2)
 addSprite("candy1", "candy", { o: "G", O: "l" }); addSprite("candy2", "candy", { o: "p", O: "P" }); addSprite("candy3", "candy", { o: "o", O: "y" });
 addSprite("iconBig_shovel", "shovel", null, 2); addSprite("iconBig_lantern", "lantern", null, 2);
 addSprite("iconBig_whip", "whip", null, 2); addSprite("iconBig_candle", "candle", null, 2);
+addSprite("iconBig_shotgun", "shotgun", null, 2); addSprite("iconBig_cross", "holycross", null, 2);
 addSprite("iconBig_boots", "boots", null, 2); addSprite("iconBig_stew", "stew", null, 2); addSprite("iconBig_tea", "tea", null, 2);
 
 const GW = {}, GLYPH = {};
@@ -170,6 +178,8 @@ resize();
 const KEEPERS = {
   mort:   { name: "MORT DIGBY", first: "MORT", last: "DIGBY", items: ["shovel", "lantern"], hp: 120, spd: 60, spr: "mort", big: "mortBig0" },
   granny: { name: "GRANNY WICKLOW", first: "GRANNY", last: "WICKLOW", items: ["whip", "candle"], hp: 95, spd: 58, spr: "granny", big: "grannyBig0" },
+  // The secret pair from New Orleans: Brussard steers, Angelle follows close behind (one shared HP bar).
+  pair:   { name: "BRUSSARD & ANGELLE", first: "BRUSSARD", last: "ANGELLE", items: ["shotgun", "cross"], hp: 90, spd: 58, spr: "brussard", big: "brussardBig" },
 };
 const UPG = {
   shovel_dmg:   { item: "shovel", name: "SHOVEL", fx: "+DAMAGE", max: 5, apply: w => { w.shovel.dmg += 6; } },
@@ -189,6 +199,15 @@ const UPG = {
   candle_dmg:   { item: "candle", name: "CANDLE", fx: "+HEAT", max: 5, apply: w => { w.candle.dmg += 4; } },
   candle_orbit: { item: "candle", name: "CANDLE", fx: "+ORBIT", max: 3, apply: w => { w.candle.orbit += 5; } },
   candle_spin:  { item: "candle", name: "CANDLE", fx: "+SPIN", max: 3, apply: w => { w.candle.spin += 0.8; } },
+  shotgun_dmg:  { item: "shotgun", name: "SHOTGUN", fx: "+BUCKSHOT", max: 5, apply: w => { w.shotgun.dmg += 1.5; } },
+  shotgun_pel:  { item: "shotgun", name: "SHOTGUN", fx: "+2 PELLETS", max: 3, apply: w => { w.shotgun.pellets += 2; w.shotgun.spread += 0.1; } },
+  shotgun_range:{ item: "shotgun", name: "SHOTGUN", fx: "+RANGE", max: 3, apply: w => { w.shotgun.range += 14; } },
+  shotgun_reload:{ item: "shotgun", name: "SHOTGUN", fx: "+RELOAD", max: 4, apply: w => { w.shotgun.cd *= 0.85; } },
+  shotgun_double:{ item: "shotgun", name: "SHOTGUN", fx: "DOUBLE BARREL", max: 1, apply: w => { w.shotgun.double = true; } },
+  cross_dmg:    { item: "cross", name: "CROSS", fx: "+HOLY", max: 5, apply: w => { w.cross.dmg += 3; } },
+  cross_size:   { item: "cross", name: "CROSS", fx: "+WIDER", max: 4, apply: w => { w.cross.radius += 5; } },
+  cross_bright: { item: "cross", name: "CROSS", fx: "+BRIGHTER", max: 3, apply: w => { w.cross.tick *= 0.85; } },
+  cross_heal:   { item: "cross", name: "CROSS", fx: "+BLESSING", max: 3, apply: w => { w.cross.heal += 1; } },
   boots:        { item: "boots", name: "BOOTS", fx: "+MOVE", max: 4, apply: (w, p) => { p.spd *= 1.1; } },
   stew:         { item: "stew", name: "STEW", fx: "+MAX HP", max: 4, apply: (w, p) => { p.maxHp += 20; p.hp += 20; } },
   tea:          { item: "tea", name: "TEA", fx: "HEAL 40%", max: 999, apply: (w, p) => { p.hp = Math.min(p.maxHp, p.hp + p.maxHp * 0.4); } },
@@ -216,7 +235,8 @@ const BOSSES = {
 const ROUND_LEN = FAST ? 4 : 50, BOSS_HP = FAST ? 0.05 : 1, CAP = 150;
 
 // ================= POOLS + SPATIAL GRID =================
-const EN = [], CANDY = [], PART = [], POPS = [], SHOTS = [], APPLES = [];
+const EN = [], CANDY = [], PART = [], POPS = [], SHOTS = [], APPLES = [], PELLETS = [];
+for (let i = 0; i < 80; i++) PELLETS.push({ on: false });
 for (let i = 0; i < 8; i++) APPLES.push({ on: false });
 for (let i = 0; i < CAP; i++) EN.push({ on: false });
 for (let i = 0; i < 260; i++) CANDY.push({ on: false });
@@ -241,29 +261,32 @@ function forTargets(x, y, R, fn) {          // every enemy (and the boss) that m
 // ================= STATE =================
 let scene = "title", sceneT = 0, phase = "waves", keeper = "mort", round = 1, roundT = 0, runT = 0, kills = 0, candyGot = 0;
 let P = null, boss = null, cards = [], pendingLv = 0, shake = 0, banner = null, phaseT = 0, cam = { x: 0, y: 0 }, swings = [], lashes = [], endInfo = null;
+const STATS = { pellets: 0, pelletHits: 0, crossHits: 0, healed: 0 };
 let apples = 0, paused = false, ticks = 0, alive = 0, spawnAcc = 0, selectMsg = null, vacuum = false;
 const STORE = "graveyard-survivors-v1-beaten";
 let storageOK = true, beaten = [], justUnlocked = false;
 try { const v = JSON.parse(localStorage.getItem(STORE) || "[]"); if (Array.isArray(v)) beaten = v.filter(k => KEEPERS[k]); } catch (e) { storageOK = false; }
-const isUnlocked = () => beaten.includes("mort") && beaten.includes("granny");
+const isUnlocked = () => DEV_UNLOCK || (beaten.includes("mort") && beaten.includes("granny"));
 function recordWin(k) {
   const was = isUnlocked();
   if (!beaten.includes(k)) beaten.push(k);
-  try { localStorage.setItem(STORE, JSON.stringify(beaten)); } catch (e) { storageOK = false; }   // the X frame may block storage
+  if (!DEV_UNLOCK) try { localStorage.setItem(STORE, JSON.stringify(beaten)); } catch (e) { storageOK = false; }   // the X frame may block storage; the test switch never saves
   justUnlocked = !was && isUnlocked();
 }
 function newPlayer(k) {
   const K = KEEPERS[k];
-  return { x: 0, y: 0, hp: FRAIL ? 1 : K.hp, maxHp: K.hp, spd: K.spd, r: 5, fx: 1, fy: 0, side: 1, inv: 0, moving: false, walk: 0, lv: 1, xp: 0, next: 5, up: {},
+  return { x: 0, y: 0, ax: -9, ay: 0, hp: FRAIL ? 1 : START_HP ? Math.min(K.hp, START_HP) : K.hp, maxHp: K.hp, spd: K.spd, r: 5, fx: 1, fy: 0, side: 1, inv: 0, moving: false, walk: 0, lv: 1, xp: 0, next: 5, up: {},
     w: { shovel: { dmg: 15, range: 26, arc: 2.4, cd: 0.7, count: 1, t: 0.3 },
          lantern: { dmg: 5, radius: 22, tick: 0.5, pull: 10, t: 0, pulse: 0 },
          whip: { dmg: 16, len: 48, h: 10, cd: 0.9, twin: false, t: 0.3, flip: 1 },
-         candle: { count: 1, dmg: 7, orbit: 22, spin: 3, ang: 0 } } };
+         candle: { count: 1, dmg: 7, orbit: 22, spin: 3, ang: 0 },
+         shotgun: { dmg: 4, pellets: 5, spread: 0.55, range: 56, cd: 1.25, t: 0.3, double: false, second: -1 },
+         cross: { dmg: 4, radius: 20, tick: 0.55, heal: 1, t: 0, pulse: 0, n: 0 } } };
 }
 function startRun(k) {
   keeper = k; rng = mulberry(SEED); P = newPlayer(k);
-  for (const a of [EN, CANDY, PART, POPS, SHOTS, APPLES]) for (const o of a) o.on = false;
-  apples = 0;
+  for (const a of [EN, CANDY, PART, POPS, SHOTS, APPLES, PELLETS]) for (const o of a) o.on = false;
+  apples = 0; STATS.pellets = 0; STATS.pelletHits = 0; STATS.crossHits = 0; STATS.healed = 0;
   boss = null; swings = []; lashes = []; round = 1; roundT = 0; runT = 0; kills = 0; candyGot = 0; pendingLv = 0; spawnAcc = 0;
   phase = "waves"; phaseT = 0; shake = 0; vacuum = false; justUnlocked = false; endInfo = null;
   cam.x = -BW / 2; cam.y = -HERO_Y; keys.clear(); joy.on = false; mouse.on = false;
@@ -283,7 +306,7 @@ function startSound() {                 // runs INSIDE a tap (pointerup / touche
   if (soundOn) { if (music && music.paused && !document.hidden) music.play().catch(() => {}); return; }
   soundOn = true;
   try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
-  music = new Audio("music.wav?v=1"); music.loop = true; music.volume = 0.3; music.muted = muted; music.setAttribute("playsinline", "");
+  music = new Audio("music.wav?v=2"); music.loop = true; music.volume = 0.3; music.muted = muted; music.setAttribute("playsinline", "");
   music.play().catch(() => {});
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = muted ? 0 : 0.5; master.connect(ac.destination); ac.resume(); } catch (e) { ac = null; }
 }
@@ -312,6 +335,8 @@ function sfx(name) {
     else if (name === "boss") tone(110, 45, 0.7, "sawtooth", 0.12);
     else if (name === "slam") tone(90, 30, 0.35, "square", 0.12);
     else if (name === "wail") tone(900, 500, 0.4, "triangle", 0.07);
+    else if (name === "blast") { tone(200, 50, 0.12, "sawtooth", 0.08); tone(900, 200, 0.05, "square", 0.04); }
+    else if (name === "holy") tone(1300, 1700, 0.09, "sine", 0.04);
     else if (name === "start") tone(330, 660, 0.12, "square", 0.05);
     else if (name === "win") { [523, 659, 784, 1046].forEach((f, i) => tone(f, f, 0.16, "square", 0.06, i * 0.12)); }
     else if (name === "lose") { [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.98, 0.2, "triangle", 0.08, i * 0.16)); }
@@ -358,7 +383,7 @@ function tapAt(x, y) {
 function press(id) {
   if (scene === "select" && sceneT > 0.25) {
     if (id === "mort" || id === "granny") startRun(id);
-    else if (id === "secret") { selectMsg = { t: 1.6, text: isUnlocked() ? "COMING SOON!" : "LOCKED" }; sfx("hurt"); }
+    else if (id === "secret") { if (isUnlocked()) startRun("pair"); else { selectMsg = { t: 1.6, text: "LOCKED" }; sfx("hurt"); } }
   } else if (scene === "levelup" && sceneT > 0.35 && /^card[0-2]$/.test(id)) pickCard(+id[4]);
   else if (scene === "end" && sceneT > 0.8) {          // ignore panic taps right after the end
     if (id === "again") startRun(keeper); else if (id === "change") setScene("select");
@@ -493,7 +518,7 @@ function weapons(dt) {
       ln.t = ln.tick; ln.pulse = 0.12;
       forTargets(P.x, P.y, ln.radius, e => { const dx = e.x - P.x, dy = e.y - P.y, d = Math.hypot(dx, dy); if (d < ln.radius + e.r) damage(e, ln.dmg, dx / (d || 1) * 10, dy / (d || 1) * 10); });
     }
-  } else {
+  } else if (keeper === "granny") {
     const wh = W.whip;
     if ((wh.t -= dt) <= 0) {          // WHIP: a long horizontal lash, alternating sides
       wh.t = wh.cd; wh.flip = -wh.flip;
@@ -514,11 +539,50 @@ function weapons(dt) {
       const a = cd.ang + i * TAU / cd.count, x = P.x + Math.cos(a) * cd.orbit, y = P.y - 4 + Math.sin(a) * cd.orbit * 0.8;
       forTargets(x, y, 6, e => { if (e.fcd > 0) return; const d = Math.hypot(e.x - x, (e.boss ? e.y - e.r : e.y) - y); if (d < 5 + e.r) { e.fcd = 0.4; damage(e, cd.dmg, Math.cos(a) * 30, Math.sin(a) * 30); } });
     }
+  } else {
+    const sg = W.shotgun;            // SHOTGUN (Brussard): a short-range spread blast at the nearest monster
+    if ((sg.t -= dt) <= 0) { sg.t = sg.cd; blast(); if (sg.double) sg.second = 0.18; }
+    if (sg.second > 0 && (sg.second -= dt) <= 0) { sg.second = -1; blast(); }
+    const cr = W.cross;              // GLOWING CROSS (Angelle): holy light that burns monsters and heals the pair a little
+    cr.pulse = Math.max(0, cr.pulse - dt);
+    if ((cr.t -= dt) <= 0) {
+      cr.t = cr.tick; cr.pulse = 0.12; cr.n++;
+      const cx = P.ax, cy = P.ay - 5;
+      forTargets(cx, cy, cr.radius, e => { const ey = e.boss ? e.y - e.r : e.y, dx = e.x - cx, dy = ey - cy, d = Math.hypot(dx, dy); if (d < cr.radius + e.r) { STATS.crossHits++; damage(e, cr.dmg, dx / (d || 1) * 14, dy / (d || 1) * 14); } });
+      if (cr.n % 6 === 0 && P.hp < P.maxHp && phase !== "dying") { const h = Math.min(cr.heal, P.maxHp - P.hp); P.hp += h; STATS.healed += h; burst(P.ax, P.ay - 8, 5, "#ffe066"); sfx("holy"); }
+    }
+  }
+  for (const b2 of PELLETS) {        // buckshot pellets fly a short way and stop at the first monster they hit
+    if (!b2.on) continue;
+    b2.x += b2.vx * dt; b2.y += b2.vy * dt;
+    if ((b2.life -= dt) <= 0) { b2.on = false; continue; }
+    forTargets(b2.x, b2.y, 4, e => {
+      if (!b2.on || !e.on || e.hp <= 0) return;
+      const ey = e.boss ? e.y - e.r : e.y - 3;
+      if (Math.hypot(e.x - b2.x, ey - b2.y) < e.r + 2) { b2.on = false; STATS.pelletHits++; damage(e, b2.dmg, b2.vx * 0.25, b2.vy * 0.25); }
+    });
   }
   for (const s of swings) s.t += dt; swings = swings.filter(s => s.t < 0.18);
   for (const l of lashes) l.t += dt; lashes = lashes.filter(l => l.t < 0.16);
 }
-function magnetR() { return keeper === "mort" ? 14 + P.w.lantern.radius + P.w.lantern.pull : 24; }
+function blast() {
+  const sg = P.w.shotgun, ox = P.x + P.side * 6, oy = P.y - 6;
+  let best = null, bd = (sg.range * 1.5) ** 2;
+  if (boss && boss.on && boss.hp > 0) { const d = (boss.x - ox) ** 2 + (boss.y - boss.r - oy) ** 2; if (d < bd) { bd = d; best = { x: boss.x, y: boss.y - boss.r }; } }
+  for (const e of EN) if (e.on) { const d = (e.x - ox) ** 2 + (e.y - 3 - oy) ** 2; if (d < bd) { bd = d; best = { x: e.x, y: e.y - 3 }; } }
+  const ang = best ? Math.atan2(best.y - oy, best.x - ox) : Math.atan2(P.fy, P.fx), sp = 240;
+  if (best) P.side = Math.cos(ang) < 0 ? -1 : 1;
+  for (let i = 0; i < sg.pellets; i++) {
+    const p = PELLETS.find(o => !o.on); if (!p) break;
+    const a = ang + (sg.pellets > 1 ? (i / (sg.pellets - 1) - 0.5) * sg.spread : 0) + rnd(-0.04, 0.04), v = sp * rnd(0.92, 1.08);
+    Object.assign(p, { on: true, x: ox, y: oy, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: sg.range / sp, dmg: sg.dmg });
+    STATS.pellets++;
+  }
+  muzzle = { t: 0.08, ang };
+  burst(ox + Math.cos(ang) * 4, oy + Math.sin(ang) * 4, 3, "#ffe066"); sfx("blast");
+}
+let muzzle = null;
+function magnetR() { return keeper === "mort" ? 14 + P.w.lantern.radius + P.w.lantern.pull : keeper === "pair" ? 28 : 24; }
 
 // ================= LEVEL UP =================
 function itemLv(item) { let n = 1; for (const [k, u] of Object.entries(UPG)) if (u.item === item && !GENERIC.includes(k)) n += P.up[k] || 0; return n; }
@@ -559,7 +623,7 @@ function nextAfterClear() {
   setScene("play");
 }
 function endGame(won) {
-  endInfo = { won, keeper, round: won || round >= 4 ? "BIG BEELZ" : "ROUND " + round, roundNum: Math.min(round, 4), time: runT, kills, level: P.lv };
+  endInfo = { won, keeper, line: won && keeper === "pair" ? "NEW ORLEANS RESTS EASY!" : null, round: won || round >= 4 ? "BIG BEELZ" : "ROUND " + round, roundNum: Math.min(round, 4), time: runT, kills, level: P.lv };
   if (won) recordWin(keeper);
   setScene("end");
 }
@@ -624,8 +688,13 @@ function update(dt) {
     const [mx, my] = moveInput();
     P.moving = Math.abs(mx) + Math.abs(my) > 0.05;
     if (P.moving) { P.x += mx * P.spd * dt; P.y += my * P.spd * dt; const l = Math.hypot(mx, my); P.fx = mx / l; P.fy = my / l; if (Math.abs(mx) > 0.2) P.side = mx < 0 ? -1 : 1; P.walk += dt; }
+    if (keeper === "pair") {           // Angelle follows close behind Brussard
+      const dx = P.x - P.ax, dy = P.y - P.ay, d = Math.hypot(dx, dy);
+      if (d > 9) { P.ax += dx / d * (d - 9); P.ay += dy / d * (d - 9); }
+    }
     weapons(dt);
   }
+  if (muzzle && (muzzle.t -= dt) <= 0) muzzle = null;
   P.inv = Math.max(0, P.inv - dt);
   cam.x += (P.x - BW / 2 - cam.x) * 0.2; cam.y += (P.y - HERO_Y - cam.y) * 0.2;
   // --- phases ---
@@ -657,7 +726,7 @@ function update(dt) {
     e.x += (ux - uy * px) * sp * dt + e.kx * dt; e.y += (uy + ux * px) * sp * dt + e.ky * dt;
     e.kx *= 0.82; e.ky *= 0.82; e.side = dx < 0 ? -1 : 1;
     if (d > RR) { const [x, y] = ringPoint(); e.x = x; e.y = y; }       // fell far behind: bring it back around
-    if (d < e.r + P.r) hurtPlayer(e.dmg);
+    if (d < e.r + P.r || (keeper === "pair" && Math.hypot(P.ax - e.x, P.ay - e.y) < e.r + 4)) hurtPlayer(e.dmg);
   }
   buildGrid();
   for (const e of EN) {                   // personal space, so crowds look like crowds
@@ -670,7 +739,7 @@ function update(dt) {
   for (const s of SHOTS) {
     if (!s.on) continue; s.x += s.vx * dt; s.y += s.vy * dt;
     if ((s.life -= dt) <= 0) { s.on = false; continue; }
-    if (Math.hypot(s.x - P.x, s.y - (P.y - 6)) < s.r + P.r) { s.on = false; hurtPlayer(s.dmg); }
+    if (Math.hypot(s.x - P.x, s.y - (P.y - 6)) < s.r + P.r || (keeper === "pair" && Math.hypot(s.x - P.ax, s.y - (P.ay - 6)) < s.r + 4)) { s.on = false; hurtPlayer(s.dmg); }
   }
   // --- Soul Candy (XP) with a magnet ---
   const mr = magnetR();
@@ -704,18 +773,20 @@ function makeGround() {
 }
 makeGround();
 const AURA = {};
-function aura(r) {     // a dithered glowing disc, made once per size
-  r = Math.round(r); if (AURA[r]) return AURA[r];
+function aura(r, holy) {     // a dithered glowing disc, made once per size (holy = Angelle's white-gold light)
+  r = Math.round(r); const key = (holy ? "h" : "") + r; if (AURA[key]) return AURA[key];
   const c = mk(r * 2 + 1, r * 2 + 1), g = c.getContext("2d");
   for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) {
     const d = Math.hypot(x, y); if (d > r) continue;
-    if (d > r - 1.2) { g.fillStyle = "#ffe066"; g.fillRect(x + r, y + r, 1, 1); }
-    else if ((x + y) % 2 === 0 && (d > r * 0.55 || (x % 4 === 0 && y % 4 === 0))) { g.fillStyle = "#ffa43a"; g.fillRect(x + r, y + r, 1, 1); }
+    if (d > r - 1.2) { g.fillStyle = holy ? "#f4f0e8" : "#ffe066"; g.fillRect(x + r, y + r, 1, 1); }
+    else if ((x + y) % 2 === 0 && (d > r * 0.55 || (x % 4 === 0 && y % 4 === 0))) { g.fillStyle = holy ? "#ffe066" : "#ffa43a"; g.fillRect(x + r, y + r, 1, 1); }
   }
-  return (AURA[r] = c);
+  return (AURA[key] = c);
 }
 const hash = (x, y) => { let h = Math.imul(x, 374761393) + Math.imul(y, 668265263) | 0; h = Math.imul(h ^ h >>> 13, 1274126177); return (h ^ h >>> 16) >>> 0; };
 const DECOR = ["tomb", "tomb", "cross", "fence", "tuft", "tuft", "bones", "pumpkin"];
+// New Orleans look (only when Brussard & Angelle are picked): above-ground tombs, wrought iron, oaks with Spanish moss
+const DECOR_NOLA = ["vault", "vault", "ironfence", "mossoak", "tomb", "tuft", "tuft", "pumpkin"];
 function drawSpr(key, x, y, flipX, white) {   // x,y = feet centre
   const s = SPR[key]; if (!s) return;
   b.drawImage(white ? (flipX ? s.wf : s.w) : (flipX ? s.f : s.n), Math.round(x - s.W / 2), Math.round(y - s.H));
@@ -730,7 +801,7 @@ function drawWorld() {
   const D = 40, c0 = Math.floor(ox / D) - 1, c1 = Math.floor((ox + BW) / D) + 1, r0 = Math.floor(oy / D) - 1, r1 = Math.floor((oy + BH) / D) + 2;
   for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {     // an endless graveyard from a hash
     const h = hash(cx, cy); if (h % 100 > 44) continue;
-    const k = DECOR[(h >>> 8) % DECOR.length], x = cx * D + ((h >>> 12) % 28) + 6, y = cy * D + ((h >>> 18) % 28) + 10;
+    const DL = keeper === "pair" ? DECOR_NOLA : DECOR, k = DL[(h >>> 8) % DL.length], x = cx * D + ((h >>> 12) % 28) + 6, y = cy * D + ((h >>> 18) % 28) + 10;
     drawSpr(k, x, y, (h >>> 3) & 1);
     if (k === "pumpkin" && (ticks >> 3) % 4) { b.fillStyle = "rgba(255,164,58,0.12)"; b.fillRect(x - 6, y - 9, 12, 10); }
   }
@@ -740,6 +811,11 @@ function drawWorld() {
     const ln = P.w.lantern, a = aura(ln.radius + (ln.pulse > 0 ? 1 : 0));
     b.globalAlpha = 0.28 + (ln.pulse > 0 ? 0.2 : 0) + Math.sin(ticks * 0.2) * 0.04;
     b.drawImage(a, Math.round(P.x - a.width / 2), Math.round(P.y - 4 - a.height / 2)); b.globalAlpha = 1;
+  }
+  if (P && keeper === "pair") {        // Angelle's holy light (under everyone)
+    const cr = P.w.cross, a = aura(cr.radius + (cr.pulse > 0 ? 1 : 0), true);
+    b.globalAlpha = 0.26 + (cr.pulse > 0 ? 0.22 : 0) + Math.sin(ticks * 0.15) * 0.04;
+    b.drawImage(a, Math.round(P.ax - a.width / 2), Math.round(P.ay - 5 - a.height / 2)); b.globalAlpha = 1;
   }
   for (const e of EN) if (e.on) {
     const fr = ((e.t * 6) | 0) & 1; shadow(e.x, e.y + 1, e.r * 2);
@@ -759,6 +835,8 @@ function drawWorld() {
       for (let i = 0; i < len; i++) { const wy = Math.sin(i * 0.25 + l.t * 40) * (1 - i / l.len) * 2; b.fillStyle = i % 3 ? "#9c6a3c" : "#6b4226"; b.fillRect(Math.round(P.x + l.side * (i + 4)), Math.round(y0 + wy), 1, 2); }
       if (pr >= 1) { b.fillStyle = "#ffe066"; const tx = Math.round(P.x + l.side * (l.len + 4)); b.fillRect(tx - 1, y0 - 2, 3, 1); b.fillRect(tx, y0 - 3, 1, 5); b.fillStyle = "#f4f0e8"; b.fillRect(tx, y0 - 1, 1, 1); }
     }
+    for (const p of PELLETS) if (p.on) { b.fillStyle = "#ffe066"; b.fillRect(Math.round(p.x), Math.round(p.y), 2, 2); b.fillStyle = "#ffa43a"; b.fillRect(Math.round(p.x - p.vx * 0.012), Math.round(p.y - p.vy * 0.012), 1, 1); }
+    if (muzzle) { b.fillStyle = "#f4f0e8"; const mx = P.x + P.side * 6 + Math.cos(muzzle.ang) * 6, my = P.y - 6 + Math.sin(muzzle.ang) * 6; b.fillRect(Math.round(mx) - 1, Math.round(my) - 1, 3, 3); }
     if (keeper === "granny") { const cd = P.w.candle; for (let i = 0; i < cd.count; i++) { const a = cd.ang + i * TAU / cd.count, x = P.x + Math.cos(a) * cd.orbit, y = P.y - 4 + Math.sin(a) * cd.orbit * 0.8; b.fillStyle = "rgba(255,164,58,0.25)"; b.fillRect(Math.round(x) - 4, Math.round(y) - 5, 9, 9); drawSpr("flame" + (((ticks >> 3) + i) & 1), x, y + 4); } }
   }
   if (boss && boss.on) {
@@ -790,7 +868,12 @@ function drawHero() {
   const K = KEEPERS[keeper], fr = P.moving ? ((P.walk * 7) | 0) & 1 : 0, blink = P.inv > 0 && (ticks >> 2) & 1;
   shadow(P.x, P.y + 1, 10);
   b.fillStyle = "rgba(255,224,102,0.45)"; b.fillRect(Math.round(P.x) - 6, Math.round(P.y) + 1, 12, 1);   // bright marker: always find the hero
-  drawSpr(K.spr + fr, P.x, P.y + 1, P.side < 0, blink);
+  if (keeper === "pair") {          // Angelle follows; whoever is lower on screen is drawn in front
+    const fa = P.moving ? (((P.walk * 7) | 0) + 1) & 1 : 0, ang = () => { shadow(P.ax, P.ay + 1, 9); drawSpr("angelle" + fa, P.ax, P.ay + 1, P.side < 0, blink); };
+    if (P.ay <= P.y) ang();
+    drawSpr(K.spr + fr, P.x, P.y + 1, P.side < 0, blink);
+    if (P.ay > P.y) ang();
+  } else drawSpr(K.spr + fr, P.x, P.y + 1, P.side < 0, blink);
   const w = 14, f = Math.max(0, P.hp / P.maxHp);
   b.fillStyle = "#140c1c"; b.fillRect(Math.round(P.x - w / 2) - 1, Math.round(P.y) + 3, w + 2, 3);
   b.fillStyle = f > 0.35 ? "#5fae4e" : "#ff4d4d"; b.fillRect(Math.round(P.x - w / 2), Math.round(P.y) + 4, Math.round(w * f), 1);
@@ -852,14 +935,15 @@ function drawTitle() {
 }
 function drawSelect() {
   night();
-  for (let x = 0; x < BW; x += 16) b.drawImage(SPR.fence.n, x, SAFE_Y + 4);
+  for (let x = 0; x < BW; x += 16) b.drawImage((isUnlocked() ? SPR.ironfence : SPR.fence).n, x, SAFE_Y + 4);
   trackUI = true;
   text("CHOOSE YOUR", BW / 2, 4, "#c8c6d8", 1, "c"); text("GRAVEKEEPER", BW / 2, 13, "#ffa43a", 1, "c");
+  if (isUnlocked()) { const fw = textW("GRAVEKEEPER") / 2 + 9; drawSpr("fleur", BW / 2 - fw, 21); drawSpr("fleur", BW / 2 + fw, 21); }
   const gap = 4, cwid = Math.floor((BW - gap * 4) / 3), chh = small ? 58 : 76, y = BTN_B + 2;
   [["mort", KEEPERS.mort], ["granny", KEEPERS.granny], ["secret", null]].forEach(([id, K], i) => {
     const x = gap + i * (cwid + gap), cx = x + cwid / 2, sy = y + 35;
     button(id, x, y, cwid, chh, false);
-    if (!K) { b.fillStyle = "#140c1c"; b.fillRect(x + 1, y + 1, cwid - 2, chh - 2); }
+    if (!K && !isUnlocked()) { b.fillStyle = "#140c1c"; b.fillRect(x + 1, y + 1, cwid - 2, chh - 2); }
     if (K) drawSpr(K.big, cx, sy - ((ticks >> 4) + i & 1));
     else if (isUnlocked()) { drawSpr("brussardBig", cx - 7, sy); drawSpr("angelleBig", cx + 7, sy, true); }
     else { b.drawImage(SPR.lockedBig.n, Math.round(cx - 19), sy - 32); b.drawImage(SPR.lockedBig2.n, Math.round(cx - 5), sy - 32); text("???", cx, sy - 21, "#9b6ad6", 1, "c"); }
@@ -867,11 +951,11 @@ function drawSelect() {
     text(n1, cx, sy + 3, K ? "#ffe066" : isUnlocked() ? "#ffa43a" : "#9b6ad6", 1, "c");
     text(n2, cx, sy + 12, K ? "#f4f0e8" : isUnlocked() ? "#ffa43a" : "#7d7a92", 1, "c");
     if (!small && K) { text(K.items[0], cx, sy + 23, "#c8c6d8", 1, "c"); text("+" + K.items[1], cx, sy + 31, "#c8c6d8", 1, "c"); }
-    if (!small && !K) text(isUnlocked() ? "SOON!" : "", cx, sy + 27, "#ffa43a", 1, "c");
+    if (!small && !K && isUnlocked()) { text("SHOTGUN", cx, sy + 23, "#c8c6d8", 1, "c"); text("+CROSS", cx, sy + 31, "#c8c6d8", 1, "c"); }
     if (!small) text(String(i + 1), x + 4, y + 3, "#7d7a92", 1, "l", null);
-    if (K && beaten.includes(id)) drawSpr("crown", x + cwid - 6, y + 7);
+    if (beaten.includes(K ? id : "pair")) drawSpr("crown", x + cwid - 6, y + 7);
   });
-  const hint = isUnlocked() ? "BRUSSARD & ANGELLE: COMING SOON" : "BEAT BIG BEELZ WITH BOTH KEEPERS";
+  const hint = isUnlocked() ? "BRUSSARD & ANGELLE ARE READY!" : "BEAT BIG BEELZ WITH BOTH KEEPERS";
   wrap(hint, BW - 8).forEach((l, i) => text(l, BW / 2, y + chh + 4 + i * 9, isUnlocked() ? "#ffa43a" : "#9b6ad6", 1, "c"));
   if (selectMsg) { const x = gap * 3 + cwid * 2.5; panel(Math.round(x - 26), y + 6, 52, 11, "#a8222c", "#ff4d4d"); text(selectMsg.text, x, y + 8, "#f4f0e8", 1, "c"); }
   trackUI = false;
@@ -912,7 +996,9 @@ function drawEnd() {
   text("TIME " + mmss(E.time) + "  KILLS " + E.kills, BW / 2, y, "#f4f0e8", 1, "c"); y += 10;
   if (E.won && justUnlocked) {
     const col = (ticks >> 3) & 1 ? "#ffe066" : "#ffa43a";
-    wrap("UNLOCKED: BRUSSARD & ANGELLE (COMING SOON)", BW - 10).forEach(l => { text(l, BW / 2, y, col, 1, "c"); y += 9; });
+    wrap("UNLOCKED: BRUSSARD & ANGELLE! PICK SLOT 3", BW - 10).forEach(l => { text(l, BW / 2, y, col, 1, "c"); y += 9; });
+  } else if (E.won && E.keeper === "pair") {
+    wrap(E.line, BW - 10).forEach(l => { text(l, BW / 2, y, "#ffe066", 1, "c"); y += 9; });
   } else if (E.won) { const left = ["mort", "granny"].filter(k => !beaten.includes(k)); if (left.length) { text("NOW WIN WITH " + KEEPERS[left[0]].first + "!", BW / 2, y, "#9b6ad6", 1, "c"); y += 10; } }
   const bh = Math.max(Math.ceil(46 / S), 22), bw = Math.floor((BW - 12) / 2);
   y = Math.min(y + 2, SAFE_Y - bh - 1);
@@ -958,14 +1044,16 @@ window.__gs = () => {
     enemies: EN.reduce((n, e) => n + (e.on ? 1 : 0), 0), kills, candy: candyGot, apples, candyOnGround: CANDY.reduce((n, c) => n + (c.on ? 1 : 0), 0),
     fps: Math.round(fps), frameMs: +frameMs.toFixed(2), time: +runT.toFixed(2), roundT: +roundT.toFixed(2), roundLen: ROUND_LEN,
     player: P ? { x: +P.x.toFixed(1), y: +P.y.toFixed(1), moving: P.moving, side: P.side } : null,
+    partner: P && keeper === "pair" ? { x: +P.ax.toFixed(1), y: +P.ay.toFixed(1), dist: +Math.hypot(P.x - P.ax, P.y - P.ay).toFixed(1) } : null,
+    world: P && keeper === "pair" ? "new-orleans" : "classic", stats: { ...STATS },
     screen: P ? { player: css(P.x, P.y - 6), boss: boss && boss.on ? css(boss.x, boss.y - boss.r) : null, nearest: near ? css(near.x, near.y) : null, nearestDist: near ? Math.round(nd) : null } : null,
     items: P ? KEEPERS[keeper].items.slice() : null, upgrades: P ? { ...P.up } : null,
     levelup: scene === "levelup" ? { cards: cards.map(k => ({ id: k, item: UPG[k].item, name: UPG[k].name, fx: UPG[k].fx })) } : null,
     buttons: btns.map(q => ({ id: q.id, x: q.x * S, y: q.y * S, w: q.w * S, h: q.h * S })),
     layout: { w: cw, h: ch, scale: +S.toFixed(3), buffer: [BW, BH], safeY: SAFE_Y * S, uiBottom: uiBottom * S, heroY: HERO_Y * S },
-    unlock: { beaten: beaten.slice(), unlocked: isUnlocked(), justUnlocked, storage: storageOK },
+    unlock: { beaten: beaten.slice(), unlocked: isUnlocked(), justUnlocked, storage: storageOK, dev: DEV_UNLOCK },
     end: endInfo ? { ...endInfo } : null,
-    flags: { seed: SEED, fast: FAST, god: GOD, stress: STRESS, frail: FRAIL },
+    flags: { seed: SEED, fast: FAST, god: GOD, stress: STRESS, frail: FRAIL, testBuild: TEST_BUILD, unlockSwitch: DEV_UNLOCK },
     sound: { on: soundOn, ctx: ac ? ac.state : null, music: music ? { paused: music.paused, muted: music.muted, time: music.currentTime } : null },
   };
 };
