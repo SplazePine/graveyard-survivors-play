@@ -26,17 +26,19 @@
 </style>
 </head>
 <body>
-<div id="loading">Graveyard Survivors<div class="dot"></div></div>
+<div id="loading">Graveyard Survivors<div class="dot"></div><div id="lp" style="font-size:12px;margin-top:10px;color:#9b6ad6"></div></div>
 <canvas id="c" tabindex="0" aria-label="Graveyard Survivors. Move with WASD, arrows, mouse or drag. Weapons attack by themselves."></canvas>
 <button id="mute" class="ctl" data-control aria-label="Sound" aria-pressed="false">🔊</button>
-<a id="open" class="ctl" data-control href="game.html?v=2" aria-label="Open the game in a new tab">↗</a>
+<a id="open" class="ctl" data-control href="game.html?v=3" aria-label="Open the game in a new tab">↗</a>
 <script>
 "use strict";
 // =====================================================================
-// GRAVEYARD SURVIVORS v0.2 - Splazetown. Plain JavaScript + canvas, no libraries.
-// All art is drawn from the pixel strings in ART (tools/art.json), all text with our own FONT.
+// GRAVEYARD SURVIVORS v0.3 PAINTED - Splazetown. Plain JavaScript + canvas, no libraries.
+// v0.3: painted art (made with Grok Imagine, processed by tools/paint.py) for the title, the keepers, the zombie, the bat
+// and the round 1 graveyard, loaded as separate WebP files (assets/, cached by ?v=). Everything else is still drawn
+// from the pixel strings in ART (tools/art.json); all text uses our own FONT.
 // =====================================================================
-const ART = {"pal":{"k":"#140c1c","K":"#2e1f45","p":"#5b3a8a","P":"#9b6ad6","g":"#2f5a3a","G":"#5fae4e","l":"#b8e86a","o":"#e06d1e","O":"#ffa43a","y":"#ffe066","w":"#f4f0e8","s":"#f0b88a","S":"#c07a5a","b":"#6b4226","B":"#9c6a3c","r":"#a8222c","R":"#ff4d4d","c":"#6fd6e8","C":"#2f7f9a","x":"#7d7a92","X":"#c8c6d8","z":"#45405a","n":"#1d2b5a","N":"#3c56a6","m":"#e89ab8","e":"#3a2a20"},"spr":{"mort0":["...kkkkk....","..kbbbbbk...","..kbBBbbk...",".kkkkkkkkk..","..kssskssk..","..kssssssk..","..kXXXXXXk..","...kXXXXk...","..kgggggk...",".kgGggggsk..",".kgGgggksk..",".kgggggk.kk.","..kgggk.kyOk","..kekek.kOyk","..kk.kk..kk.","............"],"mort1":["...kkkkk....","..kbbbbbk...","..kbBBbbk...",".kkkkkkkkk..","..kssskssk..","..kssssssk..","..kXXXXXXk..","...kXXXXk...","..kgggggk...",".kgGggggsk..",".kgGgggksk..",".kgggggk.kk.","..kgggk.kyOk","...keek.kOyk","...kkkk..kk.","............"],"granny0":["...kkkk.....","..kXXXXk....",".kXXXXXXk...",".kXsssskk.y.",".kssskssk.O.","..kssssk..w.","..kpppppk.w.",".kpPpppppsw.",".kpPppppk.k.",".kppppppk...","..kKKKKKk...",".kKKKKKKKk..",".kKKKKKKKk..","..kKKKKKk...","..kk...kk...","............"],"granny1":["...kkkk.....","..kXXXXk....",".kXXXXXXk...",".kXsssskk.y.",".kssskssk.O.","..kssssk..w.","..kpppppk.w.",".kpPpppppsw.",".kpPppppk.k.",".kppppppk...","..kKKKKKk...",".kKKKKKKKk..",".kKKKKKKKk..","..kKKKKKk...","...kk.kk....","............"],"brussard":["...kkkkk....","..kbbbbbk...","kkbbbbbbbkk.","kkkkkkkkkkk.","..kssskssk..","..kbbbbbbk..","...kbbbbk...","..knnnnnk...",".knNnnnnkkkk",".knNnnnsxxxx",".knnnnnkkkk.",".knnnnnk....",".knnnnnk....","..knkknk....","..kk..kk....","............"],"angelle":["...kkkk.....","..kbbbbk....",".kbbbbbbk...",".kbsskssk...",".kbssssbk.y.",".kbbsssbkyyy","..kwwwwwk.y.",".kwNwwwwssy.",".kwNwwwwk.y.",".kwwwwwwk...",".kNwwwwwNk..",".kwwwwwwwk..","kwwwwwwwwwk.",".kkkkkkkkk..","...kk.kk....","............"],"bat0":["kk.......kk","kpk.k.k.kpk","kppkpppkppk",".kppRpRppk.","..kkpppkk..","....kpk....","..........."],"bat1":["...........","....k.k....","...kpppk...",".kkpRpRpkk.","kpppppppppk","kpk.kpk.kpk","k....k....k"],"shambler0":["..kkkk....",".kGGGGk...",".kGkGRk...",".kGGGGk...","..kggk....",".kbbbbkkkk","kbbBbbGGGk","kbbbbbkkk.","kbbbbbk...",".kNNNNk...",".kNNNNk...",".kNk.kNk..",".kk..kk...",".........."],"shambler1":["..kkkk....",".kGGGGk...",".kGkGRk...",".kGGGGk...","..kggk....",".kbbbbkkkk","kbbBbbGGGk","kbbbbbkkk.","kbbbbbk...",".kNNNNk...",".kNNNNk...","..kNkNk...","..kk.kk...",".........."],"wisp0":["....k....","...kck...","..kcwck..","..kcwck..",".kcwwwck.",".kckwkck.",".kcwwwck.",".kccwcck.","..kcccck.","..kck.kc.","...k...k."],"wisp1":["....k....","...kck...","..kcwck..","..kcwck..",".kcwwwck.",".kckwkck.",".kcwwwck.",".kccwcck.",".kcccck..",".ck.kck..",".k...k..."],"crawler0":[".........kkk.","........kXXXk","..kkkkkkXkXkk",".kXkXkXkXXXk.","kXXXXXXXXkk..",".kXk.kXk.kXk.",".k....k...k..","............."],"crawler1":[".........kkk.","........kXXXk","..kkkkkkXkXkk",".kXkXkXkXXXk.","kXXXXXXXXkk..","..kXk.kXk.kX.","..k....k...k.","............."],"gourd0":["....kgk...","..kkkgkkk.",".kooOoOook","kooykooyok","koooooooOk","kooykykyok",".kooooook.","..kkkkkk..","..kb..bk..","..k....k.."],"gourd1":["....kgk...","..kkkgkkk.",".kooOoOook","kooykooyok","koooooooOk","kooykykyok",".kooooook.","..kkkkkk..","...kbbk...","...k..k..."],"beelz":["kk....................kk","kRk..................kRk","kRrk................krRk",".kRrk......kk......krRk.",".kRrrk....kgGk....krrRk.","..krrrkkkkkggkkkkkrrrk..","..kooOOooookkooooOOook..",".kooOOOoookookoooOOOook.","kooOOkkkookookookkkOOook","koOOkyyykookookokyyykOok","koOOokyykoookooookyykOok","koOOookkoooooooooookkOok","koOkkkkkkkkkkkkkkkkkkOok","koOkyyyyyyyyyyyyyyykOook","kooOkyykyykyykyykkOOoook",".kooOkkkkkkkkkkkkkOOook.","..kkooooooooooooooookk..","...kkkkkkkkkkkkkkkkkk...","....krrKKKKKKKKKKrrk....","...krKKKKpKKKKpKKKKrk...","..kRrKKKKKKKKKKKKKKrRk..",".kRk.kKKKKKKKKKKKKk.kRk.","kRRk.kKKKKKKKKKKKKk.kRRk",".kk..kKKKKKkkKKKKKk..kk.",".....kkkkk..kkkkk.......","........................"],"crown":["y..y..y","yy.y.yy","yyyyyyy","kkkkkkk"],"candy":["..k..",".kok.","koOok",".kok.","..k.."],"flame0":["..y..",".yOy.",".yOy.","yOrOy","yOrOy",".yOy.","..k.."],"flame1":["..y..","..y..",".yOy.","yOrOy","yOrOy",".yOy.","..k.."],"fireball":[".rOr.","rOyOr","OyyyO","rOyOr",".rOr."],"wail":[".ccc.","c...c","c.w.c","c...c",".ccc."],"rock":[".kk.","kxXk","kxxk",".kk."],"shovel":["......kk",".....kbk","....kbk.","...kbk..","kkkbk...","kXXk....","kXXXk...",".kkk...."],"lantern":["..kkkk..","..k..k..",".kkkkkk.",".kyOOyk.",".kOyyOk.",".kyOOyk.",".kkkkkk.","..kkkk.."],"whip":["kb......","kbb.....",".kbk....","..kb..bk","..kb.b..","...bb...","........","........"],"candle":["...y....","..yOy...","..yOy...","...k....","..www...","..wXw...","..www...",".kkkkk.."],"boots":["........","..kkk...","..kbk...","..kbk...","..kbkk..","..kbbbk.","..kkkkk.","........"],"stew":["...w.w..","..w.w...","........","kkkkkkkk","kBBBBBBk",".kbbbbk.","..kkkk..","........"],"tea":["...c....","..c.c...","........",".kkkkk..",".kwwwkkk",".kwwwk.k",".kwwwkkk","..kkk..."],"heart":[".kk.kk.","kRRkRRk","kRRRRRk",".kRRRk.","..kRk..","...k..."],"skullicon":[".kkkkk.","kXXXXXk","kXkXkXk","kXXXXXk",".kXkXk.","..kkk.."],"tomb":["..kkkkkk..",".kxXXXXxk.","kxXXXXXXxk","kxXkkkkXxk","kxXXXXXXxk","kxXkkkkXxk","kxXXXXXXxk","kxXXXXXXxk","kxxxxxxxxk","kzzzzzzzzk","gGgGgGgGgg"],"cross":["..kkk..","..kXk..","kkkXkkk","kXXXXXk","kkkXkkk","..kXk..","..kXk..","..kXk..","..kxk..",".kkzkk.","gGgggGg"],"fence":[".k...k...k...k..","kxk.kxk.kxk.kxk.",".x...x...x...x..","kxkkkxkkkxkkkxkk",".x...x...x...x..",".x...x...x...x..","kxkkkxkkkxkkkxkk",".x...x...x...x..",".x...x...x...x..",".k...k...k...k.."],"tuft":["..G..","G.G.G",".gGg."],"bones":[".X...X.","XkX.XkX","..XXX..","XkX.XkX",".X...X."],"pumpkin":["...g...",".kokok.","kOyoyOk","koooook","kOykyOk",".kkkkk."],"apple":["...bg..","..kbk..",".kRRRk.","kRRwRRk","kRRRRRk","kRRRRrk",".kkkkk."],"brussard1":["...kkkkk....","..kbbbbbk...","kkbbbbbbbkk.","kkkkkkkkkkk.","..kssskssk..","..kbbbbbbk..","...kbbbbk...","..knnnnnk...",".knNnnnnkkkk",".knNnnnsxxxx",".knnnnnkkkk.",".knnnnnk....",".knnnnnk....","...knnk.....","...kkkk.....","............"],"angelle1":["...kkkk.....","..kbbbbk....",".kbbbbbbk...",".kbsskssk...",".kbssssbk.y.",".kbbsssbkyyy","..kwwwwwk.y.",".kwNwwwwssy.",".kwNwwwwk.y.",".kwwwwwwk...",".kNwwwwwNk..",".kwwwwwwwk..","kwwwwwwwwwk.",".kkkkkkkkk..","....kkk.....","............"],"shotgun":["........","kkkkkk..","XXXXXXk.","xxxxxxbk","kkkkkbBk","....kbbk",".....kbk","......k."],"holycross":["...yy...","..ywwy..","yyywwyyy","ywwwwwwy","yyywwyyy","..ywwy..","..ywwy..","...yy..."],"fleur":["...y...","..yOy..",".y.y.y.","yO.y.Oy","y.yyy.y",".yyyyy.","...y...","..yOy..","...y..."],"vault":["......kk......",".....kXXk.....","....kXwwXk....","...kXwwwwXk...","..kkkkkkkkkk..","..kXwwwwwwXk..","..kXwkkkkwXk..","..kXwkzzkwXk..","..kXwkzzkwXk..","..kXwkzzkwXk..","..kXwkkkkwXk..","..kXwwwwwwXk..",".kkkkkkkkkkkk.",".kxxxxxxxxxxk.","gGgGgGgGgGgGgg"],"ironfence":[".y...y...y...y..","yzy.yzy.yzy.yzy.",".z...z...z...z..","kzkkkzkkkzkkkzkk",".z.z.z.z.z.z.z.z",".zz.zzz.zzz.zzz.",".z...z...z...z..","kzkkkzkkkzkkkzkk",".z...z...z...z..",".k...k...k...k.."],"mossoak":[".....gggggggggg.....","...ggGggggGgggggg...",".gggggggGgggggGgggg.","ggGgggggggggggggGggg","gggggGgggggGgggggggg",".gxggggbbbbggggggxg.",".xXg.xggbbgggx.gxXx.",".xX..xX.bb..xX..xX..","..X..xX.bb..xX...X..","..x...X.bb...X...x..","......x.bb...x......",".......xbb..........","........bB..........","........bB..........","........bB..........","........bB..........",".......bbBb.........","......bb.bbb........","gGgGgGgGgGgGgGgGgGgg"]}};
+const ART = {"pal":{"k":"#140c1c","K":"#2e1f45","p":"#5b3a8a","P":"#9b6ad6","g":"#2f5a3a","G":"#5fae4e","l":"#b8e86a","o":"#e06d1e","O":"#ffa43a","y":"#ffe066","w":"#f4f0e8","s":"#f0b88a","S":"#c07a5a","b":"#6b4226","B":"#9c6a3c","r":"#a8222c","R":"#ff4d4d","c":"#6fd6e8","C":"#2f7f9a","x":"#7d7a92","X":"#c8c6d8","z":"#45405a","n":"#1d2b5a","N":"#3c56a6","m":"#e89ab8","e":"#3a2a20"},"spr":{"mort0":["...kkkkk....","..kbbbbbk...","..kbBBbbk...",".kkkkkkkkk..","..kssskssk..","..kssssssk..","..kXXXXXXk..","...kXXXXk...","..kgggggk...",".kgGggggsk..",".kgGgggksk..",".kgggggk.kk.","..kgggk.kyOk","..kekek.kOyk","..kk.kk..kk.","............"],"mort1":["...kkkkk....","..kbbbbbk...","..kbBBbbk...",".kkkkkkkkk..","..kssskssk..","..kssssssk..","..kXXXXXXk..","...kXXXXk...","..kgggggk...",".kgGggggsk..",".kgGgggksk..",".kgggggk.kk.","..kgggk.kyOk","...keek.kOyk","...kkkk..kk.","............"],"granny0":["...kkkk.....","..kXXXXk....",".kXXXXXXk...",".kXsssskk.y.",".kssskssk.O.","..kssssk..w.","..kpppppk.w.",".kpPpppppsw.",".kpPppppk.k.",".kppppppk...","..kKKKKKk...",".kKKKKKKKk..",".kKKKKKKKk..","..kKKKKKk...","..kk...kk...","............"],"granny1":["...kkkk.....","..kXXXXk....",".kXXXXXXk...",".kXsssskk.y.",".kssskssk.O.","..kssssk..w.","..kpppppk.w.",".kpPpppppsw.",".kpPppppk.k.",".kppppppk...","..kKKKKKk...",".kKKKKKKKk..",".kKKKKKKKk..","..kKKKKKk...","...kk.kk....","............"],"brussard":["...kkkkk....","..kbbbbbk...","kkbbbbbbbkk.","kkkkkkkkkkk.","..kssskssk..","..kbbbbbbk..","...kbbbbk...","..knnnnnk...",".knNnnnnkkkk",".knNnnnsxxxx",".knnnnnkkkk.",".knnnnnk....",".knnnnnk....","..knkknk....","..kk..kk....","............"],"angelle":["...kkkk.....","..kbbbbk....",".kbbbbbbk...",".kbsskssk...",".kbssssbk.y.",".kbbsssbkyyy","..kwwwwwk.y.",".kwNwwwwssy.",".kwNwwwwk.y.",".kwwwwwwk...",".kNwwwwwNk..",".kwwwwwwwk..","kwwwwwwwwwk.",".kkkkkkkkk..","...kk.kk....","............"],"bat0":["kk.......kk","kpk.k.k.kpk","kppkpppkppk",".kppRpRppk.","..kkpppkk..","....kpk....","..........."],"bat1":["...........","....k.k....","...kpppk...",".kkpRpRpkk.","kpppppppppk","kpk.kpk.kpk","k....k....k"],"shambler0":["..kkkk....",".kGGGGk...",".kGkGRk...",".kGGGGk...","..kggk....",".kbbbbkkkk","kbbBbbGGGk","kbbbbbkkk.","kbbbbbk...",".kNNNNk...",".kNNNNk...",".kNk.kNk..",".kk..kk...",".........."],"shambler1":["..kkkk....",".kGGGGk...",".kGkGRk...",".kGGGGk...","..kggk....",".kbbbbkkkk","kbbBbbGGGk","kbbbbbkkk.","kbbbbbk...",".kNNNNk...",".kNNNNk...","..kNkNk...","..kk.kk...",".........."],"wisp0":["....k....","...kck...","..kcwck..","..kcwck..",".kcwwwck.",".kckwkck.",".kcwwwck.",".kccwcck.","..kcccck.","..kck.kc.","...k...k."],"wisp1":["....k....","...kck...","..kcwck..","..kcwck..",".kcwwwck.",".kckwkck.",".kcwwwck.",".kccwcck.",".kcccck..",".ck.kck..",".k...k..."],"crawler0":[".........kkk.","........kXXXk","..kkkkkkXkXkk",".kXkXkXkXXXk.","kXXXXXXXXkk..",".kXk.kXk.kXk.",".k....k...k..","............."],"crawler1":[".........kkk.","........kXXXk","..kkkkkkXkXkk",".kXkXkXkXXXk.","kXXXXXXXXkk..","..kXk.kXk.kX.","..k....k...k.","............."],"gourd0":["....kgk...","..kkkgkkk.",".kooOoOook","kooykooyok","koooooooOk","kooykykyok",".kooooook.","..kkkkkk..","..kb..bk..","..k....k.."],"gourd1":["....kgk...","..kkkgkkk.",".kooOoOook","kooykooyok","koooooooOk","kooykykyok",".kooooook.","..kkkkkk..","...kbbk...","...k..k..."],"beelz":["kk....................kk","kRk..................kRk","kRrk................krRk",".kRrk......kk......krRk.",".kRrrk....kgGk....krrRk.","..krrrkkkkkggkkkkkrrrk..","..kooOOooookkooooOOook..",".kooOOOoookookoooOOOook.","kooOOkkkookookookkkOOook","koOOkyyykookookokyyykOok","koOOokyykoookooookyykOok","koOOookkoooooooooookkOok","koOkkkkkkkkkkkkkkkkkkOok","koOkyyyyyyyyyyyyyyykOook","kooOkyykyykyykyykkOOoook",".kooOkkkkkkkkkkkkkOOook.","..kkooooooooooooooookk..","...kkkkkkkkkkkkkkkkkk...","....krrKKKKKKKKKKrrk....","...krKKKKpKKKKpKKKKrk...","..kRrKKKKKKKKKKKKKKrRk..",".kRk.kKKKKKKKKKKKKk.kRk.","kRRk.kKKKKKKKKKKKKk.kRRk",".kk..kKKKKKkkKKKKKk..kk.",".....kkkkk..kkkkk.......","........................"],"crown":["y..y..y","yy.y.yy","yyyyyyy","kkkkkkk"],"candy":["..k..",".kok.","koOok",".kok.","..k.."],"flame0":["..y..",".yOy.",".yOy.","yOrOy","yOrOy",".yOy.","..k.."],"flame1":["..y..","..y..",".yOy.","yOrOy","yOrOy",".yOy.","..k.."],"fireball":[".rOr.","rOyOr","OyyyO","rOyOr",".rOr."],"wail":[".ccc.","c...c","c.w.c","c...c",".ccc."],"rock":[".kk.","kxXk","kxxk",".kk."],"shovel":["......kk",".....kbk","....kbk.","...kbk..","kkkbk...","kXXk....","kXXXk...",".kkk...."],"lantern":["..kkkk..","..k..k..",".kkkkkk.",".kyOOyk.",".kOyyOk.",".kyOOyk.",".kkkkkk.","..kkkk.."],"whip":["kb......","kbb.....",".kbk....","..kb..bk","..kb.b..","...bb...","........","........"],"candle":["...y....","..yOy...","..yOy...","...k....","..www...","..wXw...","..www...",".kkkkk.."],"boots":["........","..kkk...","..kbk...","..kbk...","..kbkk..","..kbbbk.","..kkkkk.","........"],"stew":["...w.w..","..w.w...","........","kkkkkkkk","kBBBBBBk",".kbbbbk.","..kkkk..","........"],"tea":["...c....","..c.c...","........",".kkkkk..",".kwwwkkk",".kwwwk.k",".kwwwkkk","..kkk..."],"heart":[".kk.kk.","kRRkRRk","kRRRRRk",".kRRRk.","..kRk..","...k..."],"skullicon":[".kkkkk.","kXXXXXk","kXkXkXk","kXXXXXk",".kXkXk.","..kkk.."],"tomb":["..kkkkkk..",".kxXXXXxk.","kxXXXXXXxk","kxXkkkkXxk","kxXXXXXXxk","kxXkkkkXxk","kxXXXXXXxk","kxXXXXXXxk","kxxxxxxxxk","kzzzzzzzzk","gGgGgGgGgg"],"cross":["..kkk..","..kXk..","kkkXkkk","kXXXXXk","kkkXkkk","..kXk..","..kXk..","..kXk..","..kxk..",".kkzkk.","gGgggGg"],"fence":[".k...k...k...k..","kxk.kxk.kxk.kxk.",".x...x...x...x..","kxkkkxkkkxkkkxkk",".x...x...x...x..",".x...x...x...x..","kxkkkxkkkxkkkxkk",".x...x...x...x..",".x...x...x...x..",".k...k...k...k.."],"tuft":["..G..","G.G.G",".gGg."],"bones":[".X...X.","XkX.XkX","..XXX..","XkX.XkX",".X...X."],"pumpkin":["...g...",".kokok.","kOyoyOk","koooook","kOykyOk",".kkkkk."],"apple":["...bg..","..kbk..",".kRRRk.","kRRwRRk","kRRRRRk","kRRRRrk",".kkkkk."],"brussard1":["...kkkkk....","..kbbbbbk...","kkbbbbbbbkk.","kkkkkkkkkkk.","..kssskssk..","..kbbbbbbk..","...kbbbbk...","..knnnnnk...",".knNnnnnkkkk",".knNnnnsxxxx",".knnnnnkkkk.",".knnnnnk....",".knnnnnk....","...knnk.....","...kkkk.....","............"],"angelle1":["...kkkk.....","..kbbbbk....",".kbbbbbbk...",".kbsskssk...",".kbssssbk.y.",".kbbsssbkyyy","..kwwwwwk.y.",".kwNwwwwssy.",".kwNwwwwk.y.",".kwwwwwwk...",".kNwwwwwNk..",".kwwwwwwwk..","kwwwwwwwwwk.",".kkkkkkkkk..","....kkk.....","............"],"shotgun":["........","kkkkkk..","XXXXXXk.","xxxxxxbk","kkkkkbBk","....kbbk",".....kbk","......k."],"holycross":["...yy...","..ywwy..","yyywwyyy","ywwwwwwy","yyywwyyy","..ywwy..","..ywwy..","...yy..."],"fleur":["...y...","..yOy..",".y.y.y.","yO.y.Oy","y.yyy.y",".yyyyy.","...y...","..yOy..","...y..."],"vault":["......kk......",".....kXXk.....","....kXwwXk....","...kXwwwwXk...","..kkkkkkkkkk..","..kXwwwwwwXk..","..kXwkkkkwXk..","..kXwkzzkwXk..","..kXwkzzkwXk..","..kXwkzzkwXk..","..kXwkkkkwXk..","..kXwwwwwwXk..",".kkkkkkkkkkkk.",".kxxxxxxxxxxk.","gGgGgGgGgGgGgg"],"ironfence":[".y...y...y...y..","yzy.yzy.yzy.yzy.",".z...z...z...z..","kzkkkzkkkzkkkzkk",".z.z.z.z.z.z.z.z",".zz.zzz.zzz.zzz.",".z...z...z...z..","kzkkkzkkkzkkkzkk",".z...z...z...z..",".k...k...k...k.."],"mossoak":[".....gggggggggg.....","...ggGggggGgggggg...",".gggggggGgggggGgggg.","ggGgggggggggggggGggg","gggggGgggggGgggggggg",".gxggggbbbbggggggxg.",".xXg.xggbbgggx.gxXx.",".xX..xX.bb..xX..xX..","..X..xX.bb..xX...X..","..x...X.bb...X...x..","......x.bb...x......",".......xbb..........","........bB..........","........bB..........","........bB..........","........bB..........",".......bbBb.........","......bb.bbb........","gGgGgGgGgGgGgGgGgGgg"]},"paint":{"chars":{"mort":[0,0,97,162],"granny":[99,0,83,142],"zombie":[184,0,70,128],"bat":[256,0,105,56],"wisp":[363,0,56,68],"apple":[421,0,39,46],"candy1":[462,0,39,36],"candy2":[503,0,40,36],"candy3":[545,0,39,36]},"mobs":{"crawler":[0,0,53,48],"gourd":[55,0,47,52],"matri":[104,0,127,133],"ogre":[233,0,119,156],"banshee":[354,0,89,134],"beelz":[445,0,146,207],"brussard":[593,0,46,113],"angelle":[641,0,48,105]},"bg":{"r1":[640,640],"r2":[576,576],"r3":[576,576],"nola":[576,576]},"title":[704,704]}};
 const FONT = {"A":".###./#...#/#...#/#####/#...#/#...#/#...#","B":"####./#...#/#...#/####./#...#/#...#/####.","C":".###./#...#/#..../#..../#..../#...#/.###.","D":"####./#...#/#...#/#...#/#...#/#...#/####.","E":"#####/#..../#..../####./#..../#..../#####","F":"#####/#..../#..../####./#..../#..../#....","G":".###./#...#/#..../#.###/#...#/#...#/.####","H":"#...#/#...#/#...#/#####/#...#/#...#/#...#","I":"###/.#./.#./.#./.#./.#./###","J":"..###/...#./...#./...#./#..#./#..#./.##..","K":"#...#/#..#./#.#../##.../#.#../#..#./#...#","L":"#..../#..../#..../#..../#..../#..../#####","M":"#...#/##.##/#.#.#/#.#.#/#...#/#...#/#...#","N":"#...#/##..#/#.#.#/#..##/#...#/#...#/#...#","O":".###./#...#/#...#/#...#/#...#/#...#/.###.","P":"####./#...#/#...#/####./#..../#..../#....","Q":".###./#...#/#...#/#...#/#.#.#/#..#./.##.#","R":"####./#...#/#...#/####./#.#../#..#./#...#","S":".####/#..../#..../.###./....#/....#/####.","T":"#####/..#../..#../..#../..#../..#../..#..","U":"#...#/#...#/#...#/#...#/#...#/#...#/.###.","V":"#...#/#...#/#...#/#...#/#...#/.#.#./..#..","W":"#...#/#...#/#...#/#.#.#/#.#.#/#.#.#/.#.#.","X":"#...#/#...#/.#.#./..#../.#.#./#...#/#...#","Y":"#...#/#...#/.#.#./..#../..#../..#../..#..","Z":"#####/....#/...#./..#../.#.../#..../#####","0":".###./#...#/#..##/#.#.#/##..#/#...#/.###.","1":".#./##./.#./.#./.#./.#./###","2":".###./#...#/....#/...#./..#../.#.../#####","3":"####./....#/....#/.###./....#/....#/####.","4":"...#./..##./.#.#./#..#./#####/...#./...#.","5":"#####/#..../####./....#/....#/#...#/.###.","6":".###./#..../#..../####./#...#/#...#/.###.","7":"#####/....#/...#./..#../.#.../.#.../.#...","8":".###./#...#/#...#/.###./#...#/#...#/.###.","9":".###./#...#/#...#/.####/....#/....#/.###.",".":"./././././.#",",":"../../../../../.#/#.","!":"#/#/#/#/#/./#","?":".###./#...#/....#/...#./..#../...../..#..",":":"./././#/./#/.","-":".../.../.../###/.../.../...","+":"...../..#../..#../#####/..#../..#../.....","/":"....#/...#./...#./..#../.#.../.#.../#....","%":"##..#/##..#/...#./..#../.#.../#..##/#..##","'":"#/#/./././././","&":".##../#..#./#.#../.#.../#.#.#/#..#./.##.#","(":".#/#./#./#./#./#./.#",")":"#./.#/.#/.#/.#/.#/#.",">":"#.../.#../..#./...#/..#./.#../#...","<":"...#/..#./.#../#.../.#../..#./...#","=":"..../..../####/..../####/..../....","x":"...../...../#...#/.#.#./..#../.#.#./#...#"};
 const Q = new URLSearchParams(location.search);
 // Test-only switches (never needed by players): ?seed=N ?fast=1 ?god=1 ?stress=1 ?frail=1
@@ -67,6 +69,71 @@ document.addEventListener("click", e => {      // links always open a NEW tab (n
 
 // ================= PIXELS: sprites, palette swaps, font =================
 const mk = (w, h) => { const c = document.createElement("canvas"); c.width = Math.max(1, w); c.height = Math.max(1, h); return c; };
+// ================= PAINTED ART (v0.3) =================
+// First screen: three WebP files, loaded in parallel. If one fails or is slow (6 s), the game still starts with the old pixel art.
+// The rest (round 2-3 + New Orleans grounds, Crawler, Gourdling, bosses, Brussard & Angelle) loads after the first tap.
+// Anything that fails to load just keeps its v0.2 pixel look.
+const IMG = {}, IMG_SRC = { title: "assets/title.webp", chars: "assets/chars.webp", r1: "assets/round1-bg.webp" }, IMG_STATE = {};
+const LAZY_SRC = { mobs: "assets/mobs.webp", r2: "assets/round2-bg.webp", r3: "assets/round3-bg.webp", nola: "assets/nola-bg.webp" };
+function loadImg(k, src, cb) {
+  const im = new Image(); im.decoding = "async"; IMG_STATE[k] = "loading";
+  im.onload = () => { IMG[k] = im; IMG_STATE[k] = "ok"; if (k === "chars" || k === "mobs") cutSheet(k); cb(true); };
+  im.onerror = () => { IMG_STATE[k] = "error"; cb(false); };
+  im.src = src + "?v=3";
+}
+let lazyStarted = false;
+function loadLazy() { if (lazyStarted) return; lazyStarted = true; for (const k of Object.keys(LAZY_SRC)) loadImg(k, LAZY_SRC[k], () => {}); }
+let LOGO = null;                                 // the title logo, rebuilt on resize
+const PS = {};                                   // painted cutouts: n = art, w = white silhouette (hit flash); all face LEFT
+function loadPainted(done) {
+  const keys = Object.keys(IMG_SRC); let left = keys.length, fired = false;
+  const fin = () => { if (!fired && --left <= 0) { fired = true; done(); } };
+  const lp = document.getElementById("lp");
+  for (const k of keys) loadImg(k, IMG_SRC[k], () => { if (lp) lp.textContent = (keys.length - left + 1) + "/" + keys.length; fin(); });
+  setTimeout(() => { if (!fired) { fired = true; done(); } }, 6000);
+}
+function cutSheet(sheet) {
+  for (const [k, [x, y, w, h]] of Object.entries(ART.paint[sheet])) {
+    const n = mk(w, h), g = n.getContext("2d"); g.drawImage(IMG[sheet], x, y, w, h, 0, 0, w, h);
+    const wc = mk(w, h), wg = wc.getContext("2d"); wg.drawImage(n, 0, 0); wg.globalCompositeOperation = "source-in"; wg.fillStyle = "#fff8f0"; wg.fillRect(0, 0, w, h);
+    // rim light: a thin cool edge on the top-left of the silhouette, so dark painted figures pop off the dark ground
+    const rim = mk(w, h), rg = rim.getContext("2d"); rg.drawImage(n, 0, 0); rg.globalCompositeOperation = "source-in"; rg.fillStyle = "rgba(190,210,255,0.55)"; rg.fillRect(0, 0, w, h);
+    rg.globalCompositeOperation = "destination-out"; rg.drawImage(n, 2, 2);
+    g.globalCompositeOperation = "source-atop"; g.drawImage(rim, 0, 0); g.globalCompositeOperation = "source-over";
+    PS[k] = { n, w: wc, W: w, H: h };
+  }
+}
+// Draw a painted cutout. x,y = feet centre (world units), h = height in world units, face = +1 right / -1 left.
+// o.sx/o.sy = squash and stretch around the feet, o.rot = lean (radians), o.white = hit-flash strength, o.alpha.
+function drawPaint(k, x, y, h, face, o) {
+  const s = PS[k]; if (!s) return false; o = o || {};
+  const sc = h / s.H;
+  b.save(); b.translate(x, y); if (o.rot) b.rotate(o.rot); b.scale((o.sx || 1) * sc * (face > 0 ? -1 : 1), (o.sy || 1) * sc);
+  b.imageSmoothingEnabled = true; if (o.alpha != null) b.globalAlpha = o.alpha;
+  b.drawImage(s.n, -s.W / 2, -s.H);
+  if (o.white) { b.globalAlpha = o.white; b.drawImage(s.w, -s.W / 2, -s.H); }
+  b.restore();
+  return true;
+}
+function softShadow(x, y, w, a) { b.fillStyle = `rgba(4,2,10,${a || 0.42})`; b.beginPath(); b.ellipse(x, y, w / 2, Math.max(1.2, w / 5), 0, 0, TAU); b.fill(); }
+// Old pixel sprites restyled to sit next to the painting: 4x upscale, soft top-left light, a dark outline; drawn smoothed.
+const SOFT = {};
+function softSpr(key) {
+  if (SOFT[key]) return SOFT[key]; const s = SPR[key]; if (!s) return null;
+  const k = 4, w = s.W * k + 4, h = s.H * k + 4, base = mk(w, h), g = base.getContext("2d"); g.imageSmoothingEnabled = false;
+  const sil = mk(w, h), sg = sil.getContext("2d"); sg.imageSmoothingEnabled = false; sg.drawImage(s.n, 2, 2, s.W * k, s.H * k); sg.globalCompositeOperation = "source-in"; sg.fillStyle = "#0c0714"; sg.fillRect(0, 0, w, h);
+  for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-1, -1], [1, -1], [-1, 1], [1, 1]]) g.drawImage(sil, dx, dy);
+  g.drawImage(s.n, 2, 2, s.W * k, s.H * k);
+  g.globalCompositeOperation = "source-atop"; const lg = g.createLinearGradient(0, 0, w, h);
+  lg.addColorStop(0, "rgba(255,240,210,0.22)"); lg.addColorStop(0.5, "rgba(0,0,0,0)"); lg.addColorStop(1, "rgba(10,4,20,0.35)"); g.fillStyle = lg; g.fillRect(0, 0, w, h);
+  const wc = mk(w, h), wg = wc.getContext("2d"); wg.drawImage(base, 0, 0); wg.globalCompositeOperation = "source-in"; wg.fillStyle = "#fff8f0"; wg.fillRect(0, 0, w, h);
+  return (SOFT[key] = { n: base, w: wc, W: s.W + 1, H: s.H + 1 });
+}
+function drawSoft(key, x, y, flipX, white, alpha) {
+  const s = softSpr(key); if (!s) return;
+  b.save(); b.translate(Math.round(x * 4) / 4, Math.round(y * 4) / 4); if (flipX) b.scale(-1, 1); b.imageSmoothingEnabled = true; if (alpha != null) b.globalAlpha = alpha;
+  b.drawImage(white ? s.w : s.n, -s.W / 2, -s.H, s.W, s.H); b.restore();
+}
 const PAL = ART.pal;
 function paint(rows, swap, sc, solid) {
   const h = rows.length, w = rows[0].length, c = mk(w * sc, h * sc), x = c.getContext("2d");
@@ -150,7 +217,7 @@ function miniNum(n, x, y, color) {     // tiny 3x5 digits for damage pops
 // X can cover the bottom 30% on phones, so menus, HUD and the hero live in the top 70%.
 const SAFE = 0.7;
 const buf = mk(240, 240); let b = buf.getContext("2d");
-let cw = 0, ch = 0, S = 2, BW = 240, BH = 240, SAFE_Y = 168, BTN_B = 24, HUD_B = 50, HERO_Y = 110, small = false, VIG = null;
+let cw = 0, ch = 0, S = 2, BW = 240, BH = 240, SAFE_Y = 168, BTN_B = 24, HUD_B = 50, HERO_Y = 110, small = false, VIG = null, RES = 2;
 const dpr = () => Math.min(window.devicePixelRatio || 1, 2);
 function resize() {
   if (!innerWidth || !innerHeight) return;               // frames can be 0x0 for a moment; try again next frame
@@ -161,12 +228,15 @@ function resize() {
   const M = small ? 180 : 240;
   S = Math.min(cw, ch) / M;
   BW = Math.ceil(cw / S); BH = Math.ceil(ch / S);
-  buf.width = BW; buf.height = BH; b = buf.getContext("2d"); b.imageSmoothingEnabled = false;
+  // v0.3: the buffer is now as sharp as the screen (RES device pixels per game unit), so the paintings stay crisp.
+  // All drawing code still works in game units (240 on the short side) through a scale transform.
+  RES = S * dpr(); buf.width = Math.round(BW * RES); buf.height = Math.round(BH * RES); b = buf.getContext("2d");
+  b.setTransform(RES, 0, 0, RES, 0, 0); b.imageSmoothingEnabled = false; LOGO = null;
   SAFE_Y = Math.floor(BH * SAFE);
   BTN_B = Math.ceil(48 / S);                             // below the 44 px corner buttons
   HUD_B = BTN_B + 22;
   HERO_Y = Math.round((HUD_B + SAFE_Y) / 2);
-  VIG = mk(BW, BH); const v = VIG.getContext("2d");
+  VIG = mk(buf.width, buf.height); const v = VIG.getContext("2d"); v.scale(RES, RES);
   const g = v.createRadialGradient(BW / 2, HERO_Y, Math.min(BW, BH) * 0.3, BW / 2, HERO_Y, Math.max(BW, BH) * 0.8);
   g.addColorStop(0, "rgba(20,12,28,0)"); g.addColorStop(1, "rgba(20,12,28,0.75)");
   v.fillStyle = g; v.fillRect(0, 0, BW, BH);
@@ -289,11 +359,29 @@ function startRun(k) {
   apples = 0; STATS.pellets = 0; STATS.pelletHits = 0; STATS.crossHits = 0; STATS.healed = 0;
   boss = null; swings = []; lashes = []; round = 1; roundT = 0; runT = 0; kills = 0; candyGot = 0; pendingLv = 0; spawnAcc = 0;
   phase = "waves"; phaseT = 0; shake = 0; vacuum = false; justUnlocked = false; endInfo = null;
+  hitstop = 0; hsCd = 0; killsTick = 0; hurtFlash = 0; for (const r of RINGS) r.on = false;
   cam.x = -BW / 2; cam.y = -HERO_Y; keys.clear(); joy.on = false; mouse.on = false;
   banner = { t: 2, big: "ROUND 1", small: "SURVIVE THE NIGHT!" };
   setScene("play"); sfx("start");
 }
-function setScene(s) { scene = s; sceneT = 0; }
+function setScene(s) { scene = s; sceneT = 0; if (s !== "title") loadLazy(); }   // the first tap starts the lazy art
+// ================= GAME FEEL (looks and sound only: never hitboxes, never the seeded rng) =================
+let hitstop = 0, hsCd = 0, killsTick = 0, hurtFlash = 0;
+const RINGS = []; for (let i = 0; i < 24; i++) RINGS.push({ on: false });
+function freeze(s) { if (hsCd > 0 && s < 0.1) return; hitstop = Math.max(hitstop, s); hsCd = 0.35; }   // the whole game pauses a few frames (everything equally)
+function ring(x, y, r1, color, paint, face, h) { const o = RINGS.find(q => !q.on); if (o) Object.assign(o, { on: true, x, y, r1, t: 0, color, paint, face, h }); }
+const DEATH = { bat: ["#2a2030", "#4a3656", "#6e4f80", "#a07ab0"], shambler: ["#2c3222", "#4c5a34", "#6f7f48", "#9aa868"], wisp: ["#1e4a5a", "#3f8ea0", "#6fd6e8", "#d8f6ff"],
+  crawler: ["#3a2a20", "#6b5040", "#a08a70", "#d8ccb0"], gourd: ["#5a2a10", "#a04a18", "#e07a28", "#ffc070"] };
+function deathFx(e) {      // a white pop of the body, a ring, shards in the monster's colours that arc and land, one soul rising
+  const C = DEATH[e.type] || DEATH.crawler, pk = e.type === "shambler" ? "zombie" : e.type === "bat" ? "bat" : null;
+  ring(e.x, e.y - 4, 10, C[3], PS[pk] ? pk : null, e.side, e.type === "bat" ? 9 : 23);
+  for (let i = 0; i < 9; i++) {
+    const p = PART.find(o => !o.on); if (!p) break;
+    const a = fx() * TAU, sp = 25 + fx() * 45;
+    Object.assign(p, { on: true, x: e.x, y: e.y - 1, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.6, z: 4 + fx() * 4, vz: 40 + fx() * 50, life: 0.45 + fx() * 0.35, color: C[i % 4], size: i % 3 ? 1.2 : 2, g: true, soul: false });
+  }
+  const s = PART.find(o => !o.on); if (s) Object.assign(s, { on: true, x: e.x, y: e.y - 6, vx: 0, vy: -22, life: 0.6, color: "#e8f0ff", size: 1.4, soul: true, g: false, z: 0, vz: 0 });
+}
 
 // ================= SOUND (nothing at all until the first tap) =================
 let muted = false;
@@ -306,7 +394,7 @@ function startSound() {                 // runs INSIDE a tap (pointerup / touche
   if (soundOn) { if (music && music.paused && !document.hidden) music.play().catch(() => {}); return; }
   soundOn = true;
   try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
-  music = new Audio("music.wav?v=2"); music.loop = true; music.volume = 0.3; music.muted = muted; music.setAttribute("playsinline", "");
+  music = new Audio("music.wav?v=3"); music.loop = true; music.volume = 0.3; music.muted = muted; music.setAttribute("playsinline", "");
   music.play().catch(() => {});
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = muted ? 0 : 0.5; master.connect(ac.destination); ac.resume(); } catch (e) { ac = null; }
 }
@@ -321,16 +409,24 @@ function tone(f1, f2, len, type, vol, delay = 0) {
   g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
   o.connect(g); g.connect(master); o.start(t); o.stop(t + len + 0.02);
 }
+let NOISE = null;   // one 0.2 s white-noise buffer made once, band-passed per use (crunchy impacts)
+function noise(len, freq, vol, delay = 0) {
+  if (!NOISE) { NOISE = ac.createBuffer(1, Math.floor(ac.sampleRate * 0.2), ac.sampleRate); const d = NOISE.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const t = ac.currentTime + delay, src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  src.buffer = NOISE; f.type = "bandpass"; f.frequency.setValueAtTime(freq, t); f.Q.value = 0.9;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+  src.connect(f); f.connect(g); g.connect(master); src.start(t); src.stop(t + len + 0.02);
+}
 function sfx(name) {
   if (!ac || muted || paused) return;
   const now = performance.now(); if (now - (lastSfx[name] || 0) < 55) return; lastSfx[name] = now;   // a limit, so 50 kills aren't 50 sounds
   try {
     if (name === "swing") tone(420, 160, 0.06, "square", 0.05);
     else if (name === "lash") tone(1400, 300, 0.05, "sawtooth", 0.04);
-    else if (name === "hit") tone(220, 120, 0.04, "triangle", 0.06);
-    else if (name === "kill") tone(600, 200, 0.06, "square", 0.04);
+    else if (name === "hit") { tone(220, 120, 0.04, "triangle", 0.06); noise(0.03, 2400, 0.05); }   // tick + crisp click
+    else if (name === "kill") { tone(600, 200, 0.06, "square", 0.04); tone(120, 50, 0.09, "sine", 0.1); noise(0.07, 1200, 0.07); }   // + bass thump + crunch
     else if (name === "candy") tone(900, 1500, 0.05, "sine", 0.05);
-    else if (name === "hurt") tone(160, 60, 0.15, "sawtooth", 0.09);
+    else if (name === "hurt") { tone(160, 60, 0.15, "sawtooth", 0.09); noise(0.1, 500, 0.08); }
     else if (name === "level") { tone(523, 523, 0.08, "square", 0.06); tone(659, 659, 0.08, "square", 0.06, 0.08); tone(784, 784, 0.14, "square", 0.06, 0.16); }
     else if (name === "boss") tone(110, 45, 0.7, "sawtooth", 0.12);
     else if (name === "slam") tone(90, 30, 0.35, "square", 0.12);
@@ -450,7 +546,7 @@ function damage(e, amt, kx, ky) {
   amt = Math.max(1, Math.round(amt * rnd(0.9, 1.1)));
   e.hp -= amt; e.flash = 0.09;
   const kb = e.boss ? 0.08 : 1; e.kx += kx * kb; e.ky += ky * kb;
-  pop(amt, e.x, e.y - e.r - 8, e.boss ? "#ffe066" : "#f4f0e8");
+  pop(amt, e.x, e.y - e.r - 8, e.boss ? "#ffe066" : "#f4f0e8"); e.hitT = 0.12;
   burst(e.x, e.y - 3, 2, e.boss ? "#ffa43a" : "#c8c6d8");
   sfx("hit");
   if (e.hp <= 0) kill(e);
@@ -459,7 +555,7 @@ function kill(e) {
   kills++;
   burst(e.x, e.y - 3, e.boss ? 40 : 7, e.type === "wisp" ? "#6fd6e8" : e.type === "gourd" ? "#ffa43a" : e.type === "shambler" ? "#5fae4e" : "#9b6ad6");
   if (e.boss) { bossDown(e); return; }
-  e.on = false; sfx("kill");
+  e.on = false; sfx("kill"); killsTick++; deathFx(e); shake = Math.max(shake, 0.8);
   dropCandy(e.x, e.y, e.xp);
   if (rng() < 0.02) { const a = APPLES.find(o => !o.on); if (a) Object.assign(a, { on: true, x: e.x + 4, y: e.y }); }   // Caramel Apple: a rare heal
 }
@@ -473,7 +569,7 @@ function dropCandy(x, y, v) {
 }
 function hurtPlayer(d) {
   if (P.inv > 0 || phase === "dying" || phase === "won" || phase === "clearing") return;
-  P.inv = 0.7; shake = Math.max(shake, 3); burst(P.x, P.y - 6, 6, "#ff4d4d"); sfx("hurt");
+  P.inv = 0.7; shake = Math.max(shake, 3); burst(P.x, P.y - 6, 6, "#ff4d4d"); sfx("hurt"); hurtFlash = 0.12; freeze(0.06);
   if (GOD) return;
   P.hp -= d;
   if (P.hp <= 0) { P.hp = 0; phase = "dying"; phaseT = 1.1; burst(P.x, P.y - 6, 30, "#ff4d4d"); sfx("lose"); }
@@ -607,7 +703,7 @@ function pickCard(i) {
 
 // ================= ROUNDS + BOSSES =================
 function bossDown(e) {
-  shake = 10; e.hp = 0; e.on = false;
+  shake = 10; e.hp = 0; e.on = false; freeze(0.16); ring(e.x, e.y - e.r, 26, "#ffe066");
   for (let i = 0; i < 4; i++) burst(e.x + rnd(-10, 10), e.y - e.r + rnd(-10, 10), 15, i % 2 ? "#ffe066" : "#ff4d4d");
   for (const s of SHOTS) s.on = false;
   if (e.kind === "beelz") { phase = "won"; phaseT = 1.6; sfx("win"); for (const m of EN) if (m.on) { m.on = false; burst(m.x, m.y, 4, "#ffe066"); } return; }
@@ -757,7 +853,14 @@ function update(dt) {
   }
   while (P.xp >= P.next && phase !== "dying") { P.xp -= P.next; P.lv++; P.next = 5 + (P.lv - 1) * 4; pendingLv++; }
   if (pendingLv > 0 && (phase === "waves" || phase === "boss" || phase === "final")) openLevelUp();
-  for (const p of PART) if (p.on) { p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.9; p.vy *= 0.9; if ((p.life -= dt) <= 0) p.on = false; }
+  for (const p of PART) if (p.on) {
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.9; p.vy *= 0.9; if ((p.life -= dt) <= 0) p.on = false;
+    if (p.g) { p.vz -= 260 * dt; p.z += p.vz * dt; if (p.z < 0) { p.z = 0; p.vz *= -0.35; p.vx *= 0.5; p.vy *= 0.5; } }
+  }
+  for (const r of RINGS) if (r.on && (r.t += dt) > 0.2) r.on = false;
+  for (const e of EN) if (e.on && e.hitT > 0) e.hitT -= dt;
+  hsCd = Math.max(0, hsCd - dt); hurtFlash = Math.max(0, hurtFlash - dt);
+  if (killsTick >= 3) freeze(0.033); killsTick = 0;
   for (const p of POPS) if (p.on) { p.y -= 18 * dt; if ((p.life -= dt) <= 0) p.on = false; }
 }
 
@@ -792,39 +895,152 @@ function drawSpr(key, x, y, flipX, white) {   // x,y = feet centre
   b.drawImage(white ? (flipX ? s.wf : s.w) : (flipX ? s.f : s.n), Math.round(x - s.W / 2), Math.round(y - s.H));
 }
 function shadow(x, y, w) { b.fillStyle = "rgba(8,4,14,0.55)"; b.fillRect(Math.round(x - w / 2), Math.round(y - 1), Math.round(w), 2); b.fillRect(Math.round(x - w / 2 + 1), Math.round(y - 2), Math.round(w - 2), 4); }
+// Painted grounds: round 1 / round 2 / round 3 (+ Big Beelz), and New Orleans for Brussard & Angelle (every round).
+// If that ground hasn't loaded (or failed), the v0.2 pixel world is drawn instead.
+const worldKey = () => keeper === "pair" ? "nola" : round <= 1 ? "r1" : round === 2 ? "r2" : "r3";
+const paintedWorld = () => IMG[worldKey()] ? worldKey() : null;
+const NIGHT = { r1: "6,4,18", r2: "4,6,14", r3: "16,4,6", nola: "6,6,16" };
+const PAINT_MON = { shambler: ["zombie", 23], bat: ["bat", 9], wisp: ["wisp", 15], crawler: ["crawler", 12], gourd: ["gourd", 14] };
+const PAINT_BOSS = { matri: 40, ogre: 46, banshee: 40, beelz: 60 };
+const DRAWN = { world: null, mons: {}, boss: null, hero: null };   // what the last frame drew painted (robot checks only read this)
+const TILE_W = 300;                    // the painted tile is 300 game units wide (the screen is 240): tombs come out ~1.5x a keeper
+let FOGP = null;
+function makeFogP() {                   // soft painted fog banks (a few overlapping radial blobs), made once
+  FOGP = mk(360, 120); const g = FOGP.getContext("2d");
+  for (let i = 0; i < 9; i++) { const x = 60 + i * 30 + Math.sin(i * 2.3) * 20, y = 60 + Math.cos(i * 1.7) * 18, r = 34 + (i % 3) * 12, rg = g.createRadialGradient(x, y, 0, x, y, r);
+    rg.addColorStop(0, "rgba(150,170,190,0.55)"); rg.addColorStop(1, "rgba(150,170,190,0)"); g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2); }
+}
+function fogLayer(par, alpha, n, w) {
+  if (!FOGP) makeFogP(); b.save(); b.imageSmoothingEnabled = true; b.globalAlpha = alpha;
+  for (let i = 0; i < n; i++) { const span = BW + w + 40, x = (((i * 137 - cam.x * par + ticks * 0.12 * (i % 2 ? 1 : -0.7)) % span) + span) % span - w, y = (((i * 83 - cam.y * par) % (BH + 60)) + BH + 60) % (BH + 60) - 50; b.drawImage(FOGP, x, y, w, w / 3); }
+  b.restore();
+}
 function drawWorld() {
   const sx = shake > 0.2 ? (fx() - 0.5) * shake : 0, sy = shake > 0.2 ? (fx() - 0.5) * shake : 0;
-  const ox = Math.round(cam.x + sx), oy = Math.round(cam.y + sy);
-  const gx = ((-ox % 64) + 64) % 64 - 64, gy = ((-oy % 64) + 64) % 64 - 64;
-  for (let y = gy; y < BH; y += 64) for (let x = gx; x < BW; x += 64) b.drawImage(GROUND, x, y);
+  const ox = Math.round(cam.x + sx), oy = Math.round(cam.y + sy), painted = paintedWorld();
+  DRAWN.world = painted || "pixel"; DRAWN.mons = {}; DRAWN.boss = null;
+  if (painted) {                       // the painted tile repeats; its edges were cut along a matching seam so it wraps cleanly
+    const tw = TILE_W, th = Math.round(TILE_W * ART.paint.bg[painted][1] / ART.paint.bg[painted][0]);
+    const gx = -(((ox % tw) + tw) % tw), gy = -(((oy % th) + th) % th);
+    b.save(); b.imageSmoothingEnabled = true;
+    for (let y = gy; y < BH; y += th) for (let x = gx; x < BW; x += tw) b.drawImage(IMG[painted], x, y, tw + 0.5, th + 0.5);
+    b.restore();
+  } else {
+    const gx = ((-ox % 64) + 64) % 64 - 64, gy = ((-oy % 64) + 64) % 64 - 64;
+    for (let y = gy; y < BH; y += 64) for (let x = gx; x < BW; x += 64) b.drawImage(GROUND, x, y);
+  }
   b.save(); b.translate(-ox, -oy);
-  const D = 40, c0 = Math.floor(ox / D) - 1, c1 = Math.floor((ox + BW) / D) + 1, r0 = Math.floor(oy / D) - 1, r1 = Math.floor((oy + BH) / D) + 2;
-  for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {     // an endless graveyard from a hash
-    const h = hash(cx, cy); if (h % 100 > 44) continue;
-    const DL = keeper === "pair" ? DECOR_NOLA : DECOR, k = DL[(h >>> 8) % DL.length], x = cx * D + ((h >>> 12) % 28) + 6, y = cy * D + ((h >>> 18) % 28) + 10;
-    drawSpr(k, x, y, (h >>> 3) & 1);
-    if (k === "pumpkin" && (ticks >> 3) % 4) { b.fillStyle = "rgba(255,164,58,0.12)"; b.fillRect(x - 6, y - 9, 12, 10); }
+  if (!painted) {
+    const D = 40, c0 = Math.floor(ox / D) - 1, c1 = Math.floor((ox + BW) / D) + 1, r0 = Math.floor(oy / D) - 1, r1 = Math.floor((oy + BH) / D) + 2;
+    for (let cy = r0; cy <= r1; cy++) for (let cx = c0; cx <= c1; cx++) {     // an endless graveyard from a hash
+      const h = hash(cx, cy); if (h % 100 > 44) continue;
+      const DL = keeper === "pair" ? DECOR_NOLA : DECOR, k = DL[(h >>> 8) % DL.length], x = cx * D + ((h >>> 12) % 28) + 6, y = cy * D + ((h >>> 18) % 28) + 10;
+      drawSpr(k, x, y, (h >>> 3) & 1);
+      if (k === "pumpkin" && (ticks >> 3) % 4) { b.fillStyle = "rgba(255,164,58,0.12)"; b.fillRect(x - 6, y - 9, 12, 10); }
+    }
+  } else if (P) {                      // LIGHT on the painting only (actors are drawn after this, full-bright): night + a warm lantern pool
+    const lx = P.x, ly = P.y - 6, lr = keeper === "mort" ? P.w.lantern.radius : keeper === "pair" ? 24 : 20, flick = 1 + Math.sin(ticks * 0.21) * 0.03 + Math.sin(ticks * 0.53) * 0.02;
+    const ng = b.createRadialGradient(lx, ly, lr * 0.8, lx, ly, Math.max(BW, BH) * 0.8), nc = NIGHT[painted];
+    ng.addColorStop(0, `rgba(${nc},0)`); ng.addColorStop(0.3, `rgba(${nc},0.16)`); ng.addColorStop(1, `rgba(${nc},0.45)`);
+    b.fillStyle = ng; b.fillRect(ox, oy, BW, BH);
+    b.globalCompositeOperation = "lighter";
+    const wg = b.createRadialGradient(lx, ly, 0, lx, ly, lr * 1.5 * flick);
+    wg.addColorStop(0, "rgba(255,170,70,0.30)"); wg.addColorStop(0.6, "rgba(220,120,40,0.12)"); wg.addColorStop(1, "rgba(200,100,30,0)");
+    b.fillStyle = wg; b.fillRect(lx - lr * 2, ly - lr * 2, lr * 4, lr * 4); b.globalCompositeOperation = "source-over";
+    b.translate(ox, oy); fogLayer(0.6, 0.22, 4, 150); b.translate(-ox, -oy);   // ground fog drifts UNDER the actors
   }
-  for (const a of APPLES) if (a.on) { drawSpr("apple", a.x, a.y + 2 - ((ticks >> 4) & 1)); }
-  for (const c of CANDY) if (c.on) drawSpr(c.v >= 8 ? "candy3" : c.v >= 3 ? "candy2" : "candy1", c.x, c.y + 2 + (((ticks >> 4) + (c.x | 0)) & 1));
-  if (P && keeper === "mort") {        // lantern aura (under everyone)
-    const ln = P.w.lantern, a = aura(ln.radius + (ln.pulse > 0 ? 1 : 0));
-    b.globalAlpha = 0.28 + (ln.pulse > 0 ? 0.2 : 0) + Math.sin(ticks * 0.2) * 0.04;
-    b.drawImage(a, Math.round(P.x - a.width / 2), Math.round(P.y - 4 - a.height / 2)); b.globalAlpha = 1;
+  for (const a of APPLES) if (a.on) { const bob = Math.abs(Math.sin(ticks * 0.06)) * 1.2; if (PS.apple) { softShadow(a.x, a.y + 2, 6); drawPaint("apple", a.x, a.y + 2 - bob, 8, -1); } else if (painted) { softShadow(a.x, a.y + 2, 6); drawSoft("apple", a.x, a.y + 2 - bob); } else drawSpr("apple", a.x, a.y + 2 - ((ticks >> 4) & 1)); }
+  for (const c of CANDY) if (c.on) {
+    const k = c.v >= 8 ? "candy3" : c.v >= 3 ? "candy2" : "candy1", yy = c.y + 2 + Math.sin(ticks * 0.08 + c.x) * 0.8;
+    if (PS[k]) { const hs = c.v >= 8 ? 7 : c.v >= 3 ? 6 : 5, gc = c.v >= 8 ? "255,200,80" : c.v >= 3 ? "150,120,255" : "120,240,120", gl = b.createRadialGradient(c.x, yy - hs / 2, 0, c.x, yy - hs / 2, hs * 1.3);
+      gl.addColorStop(0, `rgba(${gc},0.35)`); gl.addColorStop(1, `rgba(${gc},0)`); b.fillStyle = gl; b.fillRect(c.x - hs * 1.3, yy - hs / 2 - hs * 1.3, hs * 2.6, hs * 2.6);
+      drawPaint(k, c.x, yy, hs, (c.x | 0) & 1 ? 1 : -1, { rot: Math.sin(ticks * 0.05 + c.y) * 0.15 }); }
+    else if (painted) drawSoft(k, c.x, yy); else drawSpr(k, c.x, c.y + 2 + (((ticks >> 4) + (c.x | 0)) & 1));
   }
-  if (P && keeper === "pair") {        // Angelle's holy light (under everyone)
+  if (P && keeper === "mort") {        // lantern reach (the burn radius): a soft warm ring in the painted world, the dithered disc otherwise
+    const ln = P.w.lantern;
+    if (painted) { b.strokeStyle = `rgba(255,196,110,${0.16 + (ln.pulse > 0 ? 0.3 : 0)})`; b.lineWidth = 1; b.setLineDash([3, 3]); b.lineDashOffset = -ticks * 0.15; b.beginPath(); b.arc(P.x, P.y - 4, ln.radius, 0, TAU); b.stroke(); b.setLineDash([]); }
+    else { const a = aura(ln.radius + (ln.pulse > 0 ? 1 : 0)); b.globalAlpha = 0.28 + (ln.pulse > 0 ? 0.2 : 0) + Math.sin(ticks * 0.2) * 0.04; b.drawImage(a, Math.round(P.x - a.width / 2), Math.round(P.y - 4 - a.height / 2)); b.globalAlpha = 1; }
+  }
+  if (P && keeper === "pair" && painted) {   // Angelle's holy light: a soft white-gold pool + a thin ring at the burn radius
+    const cr = P.w.cross, rr = cr.radius + (cr.pulse > 0 ? 1 : 0), al = 0.22 + (cr.pulse > 0 ? 0.2 : 0) + Math.sin(ticks * 0.15) * 0.03, g = b.createRadialGradient(P.ax, P.ay - 5, 0, P.ax, P.ay - 5, rr);
+    g.addColorStop(0, `rgba(255,246,200,${al + 0.1})`); g.addColorStop(0.7, `rgba(255,220,140,${al * 0.6})`); g.addColorStop(1, "rgba(255,220,140,0)");
+    b.globalCompositeOperation = "lighter"; b.fillStyle = g; b.fillRect(P.ax - rr, P.ay - 5 - rr, rr * 2, rr * 2); b.globalCompositeOperation = "source-over";
+    b.strokeStyle = `rgba(255,240,190,${0.14 + (cr.pulse > 0 ? 0.3 : 0)})`; b.lineWidth = 0.8; b.beginPath(); b.ellipse(P.ax, P.ay - 5, rr, rr, 0, 0, TAU); b.stroke();
+  } else if (P && keeper === "pair") {        // Angelle's holy light (under everyone)
     const cr = P.w.cross, a = aura(cr.radius + (cr.pulse > 0 ? 1 : 0), true);
     b.globalAlpha = 0.26 + (cr.pulse > 0 ? 0.22 : 0) + Math.sin(ticks * 0.15) * 0.04;
     b.drawImage(a, Math.round(P.ax - a.width / 2), Math.round(P.ay - 5 - a.height / 2)); b.globalAlpha = 1;
   }
   for (const e of EN) if (e.on) {
-    const fr = ((e.t * 6) | 0) & 1; shadow(e.x, e.y + 1, e.r * 2);
+    const fr = ((e.t * 6) | 0) & 1, jit = e.hitT > 0 ? ((ticks & 2) ? 0.8 : -0.8) : 0, wh = e.flash > 0 && (ticks >> 1) & 1 ? 0.6 : 0;   // the one that got hit shakes sideways (drawing only); a lighter flash so a crowd under fire stays readable
+    if (PS[(PAINT_MON[e.type] || [])[0]]) DRAWN.mons[e.type] = 1;
+    if (e.type === "wisp" && PS.wisp) {                   // painted wisp: floats, wobbles, a faint cold glow
+      const yy = e.y - 4 - Math.sin(e.t * 5) * 1.5, wob = Math.sin(e.t * 3.1 + e.x);
+      const gl = b.createRadialGradient(e.x, yy - 7, 0, e.x, yy - 7, 10); gl.addColorStop(0, "rgba(140,255,220,0.18)"); gl.addColorStop(1, "rgba(140,255,220,0)"); b.fillStyle = gl; b.fillRect(e.x - 10, yy - 17, 20, 20);
+      softShadow(e.x, e.y + 1, 8, 0.25);
+      drawPaint("wisp", e.x + jit, yy + 3, 15, e.side, { sx: 1 + wob * 0.06, sy: 1 - wob * 0.04, rot: wob * 0.06, alpha: 0.9, white: wh });
+      continue;
+    }
+    if (e.type === "crawler" && PS.crawler) {             // painted crawler: a fast low scuttle
+      const st = Math.sin(e.t * 13 + e.x), up = Math.abs(st);
+      softShadow(e.x, e.y + 1, 13, 0.4);
+      drawPaint("crawler", e.x + jit, e.y + 1 - up * 0.7, 12, e.side, { rot: st * 0.05, sx: 1 + (1 - up) * 0.05, sy: 1 - (1 - up) * 0.06, white: wh });
+      continue;
+    }
+    if (e.type === "gourd" && PS.gourd) {                 // painted gourdling: hops, squashes when it lands, its face glows
+      const hop = Math.abs(Math.sin(e.t * 6)), land = 1 - hop;
+      const gl = b.createRadialGradient(e.x, e.y - 6 - hop * 3, 0, e.x, e.y - 6 - hop * 3, 9); gl.addColorStop(0, "rgba(255,150,40,0.22)"); gl.addColorStop(1, "rgba(255,150,40,0)"); b.fillStyle = gl; b.fillRect(e.x - 9, e.y - 15 - hop * 3, 18, 18);
+      softShadow(e.x, e.y + 1, 11 - hop * 3, 0.4);
+      drawPaint("gourd", e.x + jit, e.y + 1 - hop * 3, 14, e.side, { sx: 1 + land * land * 0.12, sy: 1 - land * land * 0.12, rot: e.side * 0.05, white: wh });
+      continue;
+    }
+    if (e.type === "shambler" && PS.zombie) {             // painted zombie: a heavy sway, a dip on each step, a lean toward Mort
+      const st = Math.sin(e.t * 4.2 + e.x * 0.3), dip = Math.abs(st);
+      softShadow(e.x, e.y + 1, 12);
+      drawPaint("zombie", e.x + jit, e.y + 1 - dip * 0.9, 23, e.side, { rot: st * 0.07 + e.side * 0.06, sx: 1 + (1 - dip) * 0.035, sy: 1 - (1 - dip) * 0.035, white: wh });
+      continue;
+    }
+    if (e.type === "bat" && PS.bat) {                     // painted bat: the wing flap is a fast horizontal squash
+      const f = Math.sin(e.t * 17 + e.x), up = Math.abs(f), yy = e.y - 3 - Math.sin(e.t * 5) * 1.5;
+      softShadow(e.x, e.y + 1, 8, 0.3);
+      drawPaint("bat", e.x + jit, yy + 4, 9, e.side, { sx: 0.55 + 0.45 * up, sy: 1.12 - 0.12 * up, rot: e.side * 0.08, white: wh });
+      continue;
+    }
     let yy = e.y + 1; if (e.type === "bat" || e.type === "wisp") yy -= 4 + Math.sin(e.t * 5) * 1.5; if (e.type === "gourd") yy -= Math.abs(Math.sin(e.t * 6)) * 3;
+    if (painted) { softShadow(e.x, e.y + 1, e.r * 2.2, 0.35); drawSoft(MON[e.type].spr + fr, e.x + jit, yy, e.side < 0, wh > 0, e.type === "wisp" ? 0.88 : 1); continue; }
+    shadow(e.x, e.y + 1, e.r * 2);
     if (e.type === "wisp") b.globalAlpha = 0.85;
-    drawSpr(MON[e.type].spr + fr, e.x, yy, e.side < 0, e.flash > 0); b.globalAlpha = 1;
+    drawSpr(MON[e.type].spr + fr, e.x + Math.round(jit), yy, e.side < 0, e.flash > 0); b.globalAlpha = 1;
   }
   if (P && (phase !== "dying" || phaseT > 0.7)) drawHero();
   if (P) {
+    if (painted) {                      // painted worlds: soft strokes and glows instead of pixel squares (drawing only)
+      for (const s of swings) {         // shovel arc: a bright crescent that sweeps round and fades
+        const pr = Math.min(1, s.t / 0.12), a0 = s.ang - s.arc / 2, at = a0 + s.arc * pr, fade = s.t > 0.12 ? Math.max(0, 1 - (s.t - 0.12) / 0.1) : 1;
+        b.save(); b.lineCap = "round";
+        b.strokeStyle = `rgba(150,165,215,${0.35 * fade})`; b.lineWidth = 5; b.beginPath(); b.arc(P.x, P.y - 5, s.range - 2.5, a0, at); b.stroke();
+        b.strokeStyle = `rgba(240,244,255,${0.85 * fade})`; b.lineWidth = 1.6; b.beginPath(); b.arc(P.x, P.y - 5, s.range - 1, Math.max(a0, at - s.arc * 0.45), at); b.stroke();
+        b.fillStyle = `rgba(255,255,255,${fade})`; b.beginPath(); b.arc(P.x + Math.cos(at) * (s.range - 1), P.y - 5 + Math.sin(at) * (s.range - 1), 1.6, 0, TAU); b.fill(); b.restore();
+      }
+      for (const l of lashes) {         // whip: a curling leather stroke with a crack flash at the tip
+        const pr = Math.min(1, l.t / 0.06), len = l.len * pr, y0 = P.y - 6;
+        b.save(); b.lineCap = "round"; b.lineJoin = "round"; b.beginPath(); b.moveTo(P.x + l.side * 4, y0);
+        for (let i = 2; i <= len; i += 2) b.lineTo(P.x + l.side * (i + 4), y0 + Math.sin(i * 0.25 + l.t * 40) * (1 - i / l.len) * 2);
+        b.strokeStyle = "#5a3820"; b.lineWidth = 2; b.stroke(); b.strokeStyle = "#b07a46"; b.lineWidth = 0.9; b.stroke(); b.restore();
+        if (pr >= 1) { const tx = P.x + l.side * (l.len + 4), g = b.createRadialGradient(tx, y0, 0, tx, y0, 6); g.addColorStop(0, "rgba(255,250,210,0.95)"); g.addColorStop(0.4, "rgba(255,210,90,0.5)"); g.addColorStop(1, "rgba(255,160,40,0)"); b.fillStyle = g; b.fillRect(tx - 6, y0 - 6, 12, 12); }
+      }
+      for (const p of PELLETS) if (p.on) {   // buckshot: hot glowing dots with a short streak
+        b.strokeStyle = "rgba(255,170,60,0.55)"; b.lineWidth = 1; b.beginPath(); b.moveTo(p.x + 1, p.y + 1); b.lineTo(p.x + 1 - p.vx * 0.02, p.y + 1 - p.vy * 0.02); b.stroke();
+        b.fillStyle = "#fff2b0"; b.beginPath(); b.arc(p.x + 1, p.y + 1, 1.1, 0, TAU); b.fill();
+      }
+      if (muzzle) { const mx = P.x + P.side * 6 + Math.cos(muzzle.ang) * 6, my = P.y - 6 + Math.sin(muzzle.ang) * 6, g = b.createRadialGradient(mx, my, 0, mx, my, 6); g.addColorStop(0, "rgba(255,255,230,1)"); g.addColorStop(0.5, "rgba(255,190,80,0.6)"); g.addColorStop(1, "rgba(255,140,40,0)"); b.fillStyle = g; b.fillRect(mx - 6, my - 6, 12, 12); }
+      if (keeper === "granny") { const cd = P.w.candle; for (let i = 0; i < cd.count; i++) {   // candle flames: a warm glow + a flickering teardrop
+        const a = cd.ang + i * TAU / cd.count, x = P.x + Math.cos(a) * cd.orbit, y = P.y - 4 + Math.sin(a) * cd.orbit * 0.8, fl = 1 + Math.sin(ticks * 0.6 + i * 2) * 0.12;
+        const g = b.createRadialGradient(x, y, 0, x, y, 7); g.addColorStop(0, "rgba(255,180,70,0.45)"); g.addColorStop(1, "rgba(255,140,40,0)"); b.globalCompositeOperation = "lighter"; b.fillStyle = g; b.fillRect(x - 7, y - 7, 14, 14); b.globalCompositeOperation = "source-over";
+        for (const [w, h, c] of [[2.2, 5, "#ff8a2a"], [1.3, 3.4, "#ffe680"], [0.6, 1.8, "#fffbe8"]]) { b.fillStyle = c; b.beginPath(); b.moveTo(x, y + 1.5 - h * fl); b.quadraticCurveTo(x + w * 1.4, y, x, y + 1.6); b.quadraticCurveTo(x - w * 1.4, y, x, y + 1.5 - h * fl); b.fill(); }
+      } }
+    } else {
     for (const s of swings) {           // shovel arc: little squares sweeping round
       const pr = Math.min(1, s.t / 0.12), a0 = s.ang - s.arc / 2, n = 12;
       for (let i = 0; i <= n * pr; i++) { const a = a0 + s.arc * i / n; for (let rr = s.range - 4; rr <= s.range; rr += 2) { b.fillStyle = i > n * pr - 2 ? "#f4f0e8" : rr > s.range - 2 ? "#c8c6d8" : "#7d7a92"; b.fillRect(Math.round(P.x + Math.cos(a) * rr), Math.round(P.y - 5 + Math.sin(a) * rr), rr === s.range ? 2 : 1, 1); } }
@@ -838,6 +1054,7 @@ function drawWorld() {
     for (const p of PELLETS) if (p.on) { b.fillStyle = "#ffe066"; b.fillRect(Math.round(p.x), Math.round(p.y), 2, 2); b.fillStyle = "#ffa43a"; b.fillRect(Math.round(p.x - p.vx * 0.012), Math.round(p.y - p.vy * 0.012), 1, 1); }
     if (muzzle) { b.fillStyle = "#f4f0e8"; const mx = P.x + P.side * 6 + Math.cos(muzzle.ang) * 6, my = P.y - 6 + Math.sin(muzzle.ang) * 6; b.fillRect(Math.round(mx) - 1, Math.round(my) - 1, 3, 3); }
     if (keeper === "granny") { const cd = P.w.candle; for (let i = 0; i < cd.count; i++) { const a = cd.ang + i * TAU / cd.count, x = P.x + Math.cos(a) * cd.orbit, y = P.y - 4 + Math.sin(a) * cd.orbit * 0.8; b.fillStyle = "rgba(255,164,58,0.25)"; b.fillRect(Math.round(x) - 4, Math.round(y) - 5, 9, 9); drawSpr("flame" + (((ticks >> 3) + i) & 1), x, y + 4); } }
+    }
   }
   if (boss && boss.on) {
     const B = boss, fr = ((B.t * 5) | 0) & 1;
@@ -848,31 +1065,79 @@ function drawWorld() {
       else { for (let i = 0; i < 24; i++) { const a = i * TAU / 24 + ticks * 0.1, rr = B.r + 10; b.fillRect(Math.round(B.x + Math.cos(a) * rr), Math.round(B.y - B.r * 1.5 + Math.sin(a) * rr), 2, 2); } }
     }
     const key = B.spr + (B.kind === "beelz" ? "" : fr), sp = SPR[key];
-    shadow(B.x, B.y + 1, B.r * 2.4);
     let by = B.y + 2; if (B.kind !== "ogre") by -= 4 + Math.sin(B.t * 3) * 2;
+    if (PS[B.kind]) {                   // painted boss (drawing only: the hitbox is still B.r)
+      const wh = B.flash > 0 && (ticks >> 1) & 1 ? 0.25 : 0, face = B.kind === "beelz" ? -1 : B.side, h = PAINT_BOSS[B.kind]; DRAWN.boss = B.kind;
+      softShadow(B.x, B.y + 1, B.r * 2.1, 0.36);
+      if (B.kind === "matri") { const f = Math.abs(Math.sin(B.t * 6)); drawPaint("matri", B.x, by + 4, h, face, { sx: 0.84 + 0.16 * f, sy: 1.04 - 0.04 * f, rot: B.side * 0.05, white: wh }); }
+      else if (B.kind === "ogre") { const st = Math.sin(B.t * 3.2), dip = Math.abs(st); drawPaint("ogre", B.x, by - dip * 1.2, h, face, { rot: st * 0.045, sx: 1 + (1 - dip) * 0.03, sy: 1 - (1 - dip) * 0.035, white: wh }); }
+      else if (B.kind === "banshee") { const w = Math.sin(B.t * 4); const gl = b.createRadialGradient(B.x, by - h * 0.5, 0, B.x, by - h * 0.5, h * 0.7); gl.addColorStop(0, `rgba(190,220,255,${B.st === "tele" ? 0.4 : 0.16})`); gl.addColorStop(1, "rgba(190,220,255,0)"); b.fillStyle = gl; b.fillRect(B.x - h * 0.7, by - h * 1.2, h * 1.4, h * 1.4);
+        drawPaint("banshee", B.x, by + 3, h, face, { sx: 1 + w * 0.04, sy: 1 - w * 0.02, rot: Math.sin(B.t * 2) * 0.05, alpha: 0.92, white: wh }); }
+      else { const br = Math.sin(B.t * 2.5), hot = B.st === "tele" ? 0.5 : 0.25, gl = b.createRadialGradient(B.x, by - h * 0.72, 0, B.x, by - h * 0.72, h * 0.5);
+        gl.addColorStop(0, `rgba(255,140,30,${hot + Math.sin(ticks * 0.3) * 0.05})`); gl.addColorStop(1, "rgba(255,90,20,0)"); b.globalCompositeOperation = "lighter"; b.fillStyle = gl; b.fillRect(B.x - h * 0.5, by - h * 1.22, h, h); b.globalCompositeOperation = "source-over";
+        drawPaint("beelz", B.x, by + 4, h, face, { sx: 1 - br * 0.015, sy: 1 + br * 0.025, white: wh }); }
+    } else {
+    shadow(B.x, B.y + 1, B.r * 2.4);
     if (B.kind === "banshee") b.globalAlpha = 0.9;
     drawSpr(key, B.x, by, B.kind === "beelz" ? false : B.side < 0, B.flash > 0); b.globalAlpha = 1;
     if (B.kind === "matri") drawSpr("crownBig", B.x, by - sp.H + 6);
     if (B.kind === "beelz" && (ticks >> 3) & 1) { b.fillStyle = "#ffe066"; b.fillRect(Math.round(B.x) - 13, Math.round(by) - 33, 2, 2); b.fillRect(Math.round(B.x) + 11, Math.round(by) - 33, 2, 2); }
+    }
   }
-  for (const s of SHOTS) if (s.on) drawSpr(s.kind === "fire" ? "fireball" : s.kind === "rock" ? "rock" : "wail", s.x, s.y + 2);
-  for (const p of PART) if (p.on) { b.fillStyle = p.color; b.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size); }
+  for (const s of SHOTS) if (s.on) {
+    if (!painted) { drawSpr(s.kind === "fire" ? "fireball" : s.kind === "rock" ? "rock" : "wail", s.x, s.y + 2); continue; }
+    const x = s.x, y = s.y - 1.5;
+    if (s.kind === "fire") { const g = b.createRadialGradient(x, y, 0, x, y, 5); g.addColorStop(0, "rgba(255,250,200,1)"); g.addColorStop(0.35, "rgba(255,160,40,0.9)"); g.addColorStop(1, "rgba(220,40,10,0)"); b.fillStyle = g; b.fillRect(x - 5, y - 5, 10, 10); }
+    else if (s.kind === "rock") { softShadow(x, s.y + 2, 4, 0.4); const g = b.createRadialGradient(x - 0.8, y - 0.8, 0.3, x, y, 2.4); g.addColorStop(0, "#9a8f8a"); g.addColorStop(1, "#3a3236"); b.fillStyle = g; b.beginPath(); b.arc(x, y, 2.2, 0, TAU); b.fill(); }
+    else { b.strokeStyle = "rgba(200,230,255,0.85)"; b.lineWidth = 1; b.beginPath(); b.arc(x, y, 2.4, 0, TAU); b.stroke(); b.strokeStyle = "rgba(200,230,255,0.35)"; b.lineWidth = 2.2; b.beginPath(); b.arc(x, y, 3.6, 0, TAU); b.stroke(); }
+  }
+  for (const r of RINGS) if (r.on) {            // kill pop: a white flash of the body, then a thin ring that grows and breaks up
+    const k = r.t / 0.2;
+    if (r.paint && r.t < 0.06) drawPaint(r.paint, r.x, r.y + 5, r.h, r.face, { white: 1, alpha: 1 - r.t / 0.06 });
+    b.strokeStyle = k < 0.5 ? "rgba(255,255,255,0.9)" : r.color; b.lineWidth = 1.2 * (1 - k) + 0.3; b.globalAlpha = 1 - k;
+    b.beginPath(); b.ellipse(r.x, r.y, 2 + r.r1 * k, (2 + r.r1 * k) * 0.7, 0, 0, TAU); b.stroke(); b.globalAlpha = 1;
+  }
+  for (const p of PART) if (p.on) {
+    if (p.g) { b.fillStyle = "rgba(6,3,12,0.45)"; b.fillRect(p.x, p.y + 1, p.size, 0.8); }
+    b.fillStyle = p.color; b.globalAlpha = Math.min(1, p.life * 4);
+    if (p.soul) { b.beginPath(); b.arc(p.x + Math.sin(p.life * 20) * 0.8, p.y, p.size, 0, TAU); b.fill(); }
+    else b.fillRect(p.x, p.y - (p.z || 0), p.size, p.size);
+    b.globalAlpha = 1;
+  }
   for (const p of POPS) if (p.on) miniNum(p.n, p.x, p.y, p.color);
   b.restore();
-  b.globalAlpha = 0.09;                 // fog drifting over the graveyard
-  for (let i = 0; i < 5; i++) { const span = BW + 120, x = (((i * 97 - cam.x * 0.5 + ticks * 0.15 * (i % 2 ? 1 : -0.6)) % span) + span) % span - 90, y = (((i * 61 - cam.y * 0.5) % (BH + 40)) + BH + 40) % (BH + 40) - 30; b.drawImage(FOG, Math.round(x), Math.round(y)); }
-  b.globalAlpha = 1;
-  if (VIG) b.drawImage(VIG, 0, 0);
+  if (painted) fogLayer(1.3, painted === "r3" ? 0.045 : 0.06, 3, 220);   // a very faint near mist over everything (faster: it feels closer)
+  else {
+    b.globalAlpha = 0.09;                 // fog drifting over the graveyard
+    for (let i = 0; i < 5; i++) { const span = BW + 120, x = (((i * 97 - cam.x * 0.5 + ticks * 0.15 * (i % 2 ? 1 : -0.6)) % span) + span) % span - 90, y = (((i * 61 - cam.y * 0.5) % (BH + 40)) + BH + 40) % (BH + 40) - 30; b.drawImage(FOG, Math.round(x), Math.round(y)); }
+    b.globalAlpha = 1;
+  }
+  if (VIG) b.drawImage(VIG, 0, 0, BW, BH);
+  if (hurtFlash > 0) { const g = b.createRadialGradient(BW / 2, BH / 2, Math.min(BW, BH) * 0.35, BW / 2, BH / 2, Math.max(BW, BH) * 0.75); g.addColorStop(0, "rgba(200,20,40,0)"); g.addColorStop(1, `rgba(200,20,40,${(hurtFlash * 3).toFixed(2)})`); b.fillStyle = g; b.fillRect(0, 0, BW, BH); }
 }
 function drawHero() {
   const K = KEEPERS[keeper], fr = P.moving ? ((P.walk * 7) | 0) & 1 : 0, blink = P.inv > 0 && (ticks >> 2) & 1;
-  shadow(P.x, P.y + 1, 10);
+  const paintedPair = keeper === "pair" && PS.brussard && PS.angelle;
+  DRAWN.hero = (keeper === "pair" ? paintedPair : !!PS[keeper]) ? keeper : null;
+  if (PS[keeper] || paintedPair) softShadow(P.x, P.y + 1, 13, 0.5); else shadow(P.x, P.y + 1, 10);
   b.fillStyle = "rgba(255,224,102,0.45)"; b.fillRect(Math.round(P.x) - 6, Math.round(P.y) + 1, 12, 1);   // bright marker: always find the hero
-  if (keeper === "pair") {          // Angelle follows; whoever is lower on screen is drawn in front
+  const walkO = (moving, ph, k) => { const step = Math.abs(Math.sin(ph)), br = Math.sin(ticks * 0.06 + k);
+    const o = moving ? { rot: P.side * 0.07, sx: 1 + (1 - step) * 0.045, sy: 1 - (1 - step) * 0.05 } : { sx: 1 - br * 0.008, sy: 1 + br * 0.012 }; o.white = blink ? 0.55 : 0; o.dy = moving ? step * 1.6 : 0; return o; };
+  if (paintedPair) {                // painted Brussard & Angelle: both bob on their own step, Angelle a half step behind
+    const ang = () => { softShadow(P.ax, P.ay + 1, 11, 0.45); const o = walkO(P.moving, P.walk * 10 + 1.6, 1); drawPaint("angelle", P.ax, P.ay + 1 - o.dy, 23, P.side, o); };
+    if (P.ay <= P.y) ang();
+    const o = walkO(P.moving, P.walk * 10, 0); drawPaint("brussard", P.x, P.y + 1 - o.dy, 25, P.side, o);
+    if (P.ay > P.y) ang();
+  } else if (keeper === "pair") {          // Angelle follows; whoever is lower on screen is drawn in front
     const fa = P.moving ? (((P.walk * 7) | 0) + 1) & 1 : 0, ang = () => { shadow(P.ax, P.ay + 1, 9); drawSpr("angelle" + fa, P.ax, P.ay + 1, P.side < 0, blink); };
     if (P.ay <= P.y) ang();
     drawSpr(K.spr + fr, P.x, P.y + 1, P.side < 0, blink);
     if (P.ay > P.y) ang();
+  } else if (PS[keeper]) {          // painted keeper: walk bob, squash on each step, lean into the walk, slow breathing when idle
+    const ph = P.walk * 10, step = Math.abs(Math.sin(ph)), br = Math.sin(ticks * 0.06);
+    const o = P.moving ? { rot: P.side * 0.07, sx: 1 + (1 - step) * 0.045, sy: 1 - (1 - step) * 0.05 } : { sx: 1 - br * 0.008, sy: 1 + br * 0.012 };
+    o.white = blink ? 0.55 : 0;
+    drawPaint(keeper, P.x, P.y + 1 - (P.moving ? step * 1.6 : 0), keeper === "mort" ? 26 : 23, P.side, o);
   } else drawSpr(K.spr + fr, P.x, P.y + 1, P.side < 0, blink);
   const w = 14, f = Math.max(0, P.hp / P.maxHp);
   b.fillStyle = "#140c1c"; b.fillRect(Math.round(P.x - w / 2) - 1, Math.round(P.y) + 3, w + 2, 3);
@@ -890,11 +1155,12 @@ function drawHUD() {
   text("LV" + P.lv, m, y, "#ffe066");
   const lw = textW("LV" + P.lv) + 3;
   bar(m + lw, y + 2, BW - m * 2 - lw, 3, P.xp / P.next, "#5fae4e", "#2e1f45");
-  drawSpr("heart", m + 3, y + 16);
+  const r2 = small ? 9 : 10;           // the HP row sits 1 unit higher on small frames
+  drawSpr("heart", m + 3, y + r2 + 6);
   const hw = Math.round(Math.min(70, BW * 0.32));
-  bar(m + 9, y + 12, hw, 4, P.hp / P.maxHp, P.hp / P.maxHp > 0.35 ? "#ff4d4d" : "#ffa43a", "#2e1f45");
-  text(String(Math.ceil(P.hp)), m + 12 + hw, y + 10, "#f4f0e8");
-  const kt = String(kills); text(kt, BW - m, y + 10, "#c8c6d8", 1, "r"); drawSpr("skullicon", BW - m - textW(kt) - 6, y + 17);
+  bar(m + 9, y + r2 + 2, hw, small ? 3 : 4, P.hp / P.maxHp, P.hp / P.maxHp > 0.35 ? "#ff4d4d" : "#ffa43a", "#2e1f45");
+  text(String(Math.ceil(P.hp)), m + 12 + hw, y + r2, "#f4f0e8");
+  const kt = String(kills); text(kt, BW - m, y + r2, "#c8c6d8", 1, "r"); drawSpr("skullicon", BW - m - textW(kt) - 6, y + r2 + 7);
   if (boss && boss.on && boss.hp > 0) {
     const by = HUD_B + 1, big = boss.kind === "beelz";
     text(boss.name, mid, by, big ? "#ff4d4d" : "#ffa43a", 1, "c");
@@ -913,13 +1179,67 @@ function drawHUD() {
   trackUI = false;
 }
 function panel(x, y, w, h, fill, edge) { b.fillStyle = "#140c1c"; b.fillRect(x - 1, y - 1, w + 2, h + 2); b.fillStyle = edge; b.fillRect(x, y, w, h); b.fillStyle = fill; b.fillRect(x + 1, y + 1, w - 2, h - 2); if (trackUI) uiBottom = Math.max(uiBottom, y + h + 1); }
-function button(id, x, y, w, h, hot) { btns.push({ id, x, y, w, h }); panel(x, y, w, h, hot ? "#5b3a8a" : "#2e1f45", hot ? "#ffe066" : "#9b6ad6"); }
+function button(id, x, y, w, h, hot) { btns.push({ id, x, y, w, h }); panel(x, y, w, h, hot ? "rgba(70,40,105,0.88)" : "rgba(30,18,44,0.82)", hot ? "#ffe066" : "#9b6ad6"); }
 function dim(a) { b.fillStyle = `rgba(14,8,20,${a})`; b.fillRect(0, 0, BW, BH); }
 function night() {
   b.fillStyle = "#1c1030"; b.fillRect(0, 0, BW, BH);
   for (let i = 0; i < 40; i++) { const h = hash(i, 3); b.fillStyle = (ticks >> 5) % 3 === h % 3 ? "#ffe066" : "#9b6ad6"; b.fillRect(h % BW, (h >>> 8) % Math.round(BH * 0.6), 1, 1); }
 }
+// ---- the logo: our pixel font rebuilt as soft blobs, with drips, a bone-to-ember fill, a dark rim and a glow ----
+function logoWord(g, word, x0, y0, c, seed) {      // c = size of one font pixel in device px; returns the filled cells
+  const cells = []; let x = x0;
+  for (const ch of word) { const rows = FONT[ch].split("/"); rows.forEach((r, j) => { for (let i = 0; i < r.length; i++) if (r[i] === "#") cells.push([x + i * c, y0 + j * c, rows.length - 1 === j]); }); x += (rows[0].length + 1) * c; }
+  return cells;
+}
+function blobPath(g, cells, c, grow, seed) {      // round dots joined by bars = smooth strokes with rounded ends, plus drips
+  const R = c * (0.56 + grow), has = new Set(cells.map(([x, y]) => Math.round(x / c * 2) + "," + Math.round(y / c * 2))), at = (x, y) => has.has(Math.round(x / c * 2) + "," + Math.round(y / c * 2));
+  g.beginPath();
+  for (const [x, y, bottom] of cells) {
+    const cx = x + c / 2, cy = y + c / 2;
+    g.moveTo(cx + R, cy); g.arc(cx, cy, R, 0, TAU);
+    if (at(x + c, y)) g.rect(cx, cy - R, c, R * 2);
+    if (at(x, y + c)) g.rect(cx - R, cy, R * 2, c);
+    for (const dx of [-c, c]) if (at(x + dx, y + c) && !at(x + dx, y) && !at(x, y + c)) {   // diagonal steps (V, Y, A...) become one slanted bar
+      const k = R / Math.SQRT2, sg = Math.sign(dx), q = [[cx + k, cy - k * sg], [cx + dx + k, cy + c - k * sg], [cx + dx - k, cy + c + k * sg], [cx - k, cy + k * sg]];
+      let area = 0; for (let n = 0; n < 4; n++) { const [x1, y1] = q[n], [x2, y2] = q[(n + 1) % 4]; area += x1 * y2 - x2 * y1; } if (area < 0) q.reverse();   // same winding as the arcs, so nonzero fill unions them
+      g.moveTo(q[0][0], q[0][1]); for (let n = 1; n < 4; n++) g.lineTo(q[n][0], q[n][1]); g.closePath();
+    }
+    if (bottom) { const h = hash(Math.round(x / c) * 7 + seed, Math.round(y / c)) % 100; if (h < 34) { const len = c * (0.9 + (h % 9) * 0.25), dr = c * (0.28 + grow); g.rect(cx - dr, cy, dr * 2, len); g.moveTo(cx + dr * 1.15, cy + len); g.arc(cx, cy + len, dr * 1.15, 0, TAU); } }
+  }
+}
+function makeLogo() {
+  const W1 = textW("GRAVEYARD"), sc = Math.min(4, (BW * 0.86) / W1), c = sc * RES, pad = Math.ceil(c * 2.5);
+  const w = Math.ceil(W1 * c + pad * 2), h = Math.ceil((7 * 2 + 3.2) * c + pad * 2.6), L = mk(w, h), g = L.getContext("2d");
+  const words = [["GRAVEYARD", pad, pad, ["#f6ecd2", "#f0b060", "#c0501c", "#6e1c10"], 3], ["SURVIVORS", pad + (W1 - textW("SURVIVORS")) * c / 2, pad + 9.6 * c, ["#e4f2c0", "#9ccc5c", "#4e8a2c", "#1f3c14"], 11]];
+  for (const [word, x, y, cols, seed] of words) {
+    const cells = logoWord(g, word, x, y, c, seed);
+    g.save(); g.shadowColor = seed === 3 ? "rgba(255,110,30,0.75)" : "rgba(120,220,90,0.55)"; g.shadowBlur = c * 2.2; g.fillStyle = "#07040c"; blobPath(g, cells, c, 0.34, seed); g.fill(); g.restore();
+    const gr = g.createLinearGradient(0, y, 0, y + 7 * c); cols.forEach((col, i) => gr.addColorStop(i / 3, col));
+    g.fillStyle = gr; blobPath(g, cells, c, 0, seed); g.fill();
+    g.save(); blobPath(g, cells, c, 0, seed); g.clip(); g.fillStyle = "rgba(255,255,255,0.28)"; g.fillRect(0, y - c, w, c * 1.6); g.restore();   // a wet highlight along the top
+  }
+  LOGO = { c: L, w: w / RES, h: h / RES, pad: pad / RES };
+}
+function drawLogo(y) {
+  if (!LOGO) makeLogo();
+  b.save(); b.imageSmoothingEnabled = true; b.drawImage(LOGO.c, BW / 2 - LOGO.w / 2, y - LOGO.pad, LOGO.w, LOGO.h); b.restore();
+  if (trackUI) uiBottom = Math.max(uiBottom, y - LOGO.pad + LOGO.h * 0.86);
+  return y - LOGO.pad + LOGO.h * 0.86;
+}
+function drawArt(im, focusY) {                     // cover the frame with a square painting, keeping focusY (0-1) in view
+  const sc = Math.max(BW, BH) / im.width, h = im.height * sc, y = clamp(BH / 2 - focusY * h, BH - h, 0);
+  b.save(); b.imageSmoothingEnabled = true; b.drawImage(im, (BW - im.width * sc) / 2, y, im.width * sc, h); b.restore();
+}
 function drawTitle() {
+  if (!IMG.title) return drawTitleOld();
+  drawArt(IMG.title, BW > BH * 1.1 ? 0.36 : 0.5);
+  const top = b.createLinearGradient(0, 0, 0, BH * 0.45); top.addColorStop(0, "rgba(6,4,10,0.85)"); top.addColorStop(1, "rgba(6,4,10,0)"); b.fillStyle = top; b.fillRect(0, 0, BW, BH * 0.45);
+  trackUI = true;
+  const yb = drawLogo(BTN_B);
+  if ((ticks >> 5) % 3 < 2) text(matchMedia("(pointer:coarse)").matches ? "TAP TO START" : "CLICK OR PRESS A KEY", BW / 2, yb + 3, "#f4f0e8", 1, "c");
+  trackUI = false;
+}
+function drawTitleOld() {
   night();
   const mx = BW - 30, my = SAFE_Y - 52;      // the moon
   for (let y = -13; y <= 13; y++) for (let x = -13; x <= 13; x++) { const d = Math.hypot(x, y); if (d <= 13) { b.fillStyle = d > 12 ? "#ffa43a" : (Math.hypot(x - 4, y + 3) < 3 || Math.hypot(x + 5, y - 5) < 2) ? "#e0c050" : "#ffe066"; b.fillRect(mx + x, my + y, 1, 1); } }
@@ -934,8 +1254,9 @@ function drawTitle() {
   trackUI = false;
 }
 function drawSelect() {
-  night();
-  for (let x = 0; x < BW; x += 16) b.drawImage((isUnlocked() ? SPR.ironfence : SPR.fence).n, x, SAFE_Y + 4);
+  const sb = isUnlocked() && IMG.nola ? IMG.nola : IMG.r1;
+  if (sb) { drawArt(sb, 0.45); dim(0.55); } else night();
+  if (!IMG.r1) for (let x = 0; x < BW; x += 16) b.drawImage((isUnlocked() ? SPR.ironfence : SPR.fence).n, x, SAFE_Y + 4);
   trackUI = true;
   text("CHOOSE YOUR", BW / 2, 4, "#c8c6d8", 1, "c"); text("GRAVEKEEPER", BW / 2, 13, "#ffa43a", 1, "c");
   if (isUnlocked()) { const fw = textW("GRAVEKEEPER") / 2 + 9; drawSpr("fleur", BW / 2 - fw, 21); drawSpr("fleur", BW / 2 + fw, 21); }
@@ -944,7 +1265,16 @@ function drawSelect() {
     const x = gap + i * (cwid + gap), cx = x + cwid / 2, sy = y + 35;
     button(id, x, y, cwid, chh, false);
     if (!K && !isUnlocked()) { b.fillStyle = "#140c1c"; b.fillRect(x + 1, y + 1, cwid - 2, chh - 2); }
-    if (K) drawSpr(K.big, cx, sy - ((ticks >> 4) + i & 1));
+    if (K && PS[id]) {               // painted portrait: a little breathing bob, standing in a lantern glow
+      const gl = b.createRadialGradient(cx, sy - 14, 2, cx, sy - 14, 26); gl.addColorStop(0, "rgba(255,170,70,0.28)"); gl.addColorStop(1, "rgba(255,170,70,0)"); b.fillStyle = gl; b.fillRect(x + 1, y + 1, cwid - 2, chh - 2);
+      softShadow(cx, sy, 16, 0.55); const br = Math.sin(ticks * 0.05 + i * 2);
+      drawPaint(id, cx, sy, id === "mort" ? 33 : 30, i ? -1 : 1, { sy: 1 + br * 0.012, sx: 1 - br * 0.008 });
+    } else if (K) drawSpr(K.big, cx, sy - ((ticks >> 4) + i & 1));
+    else if (isUnlocked() && PS.brussard && PS.angelle) {
+      const gl = b.createRadialGradient(cx, sy - 14, 2, cx, sy - 14, 26); gl.addColorStop(0, "rgba(255,230,160,0.24)"); gl.addColorStop(1, "rgba(255,230,160,0)"); b.fillStyle = gl; b.fillRect(x + 1, y + 1, cwid - 2, chh - 2);
+      softShadow(cx, sy, 22, 0.55); const br = Math.sin(ticks * 0.05 + 4);
+      drawPaint("angelle", cx + 7, sy, 28, -1, { sy: 1 + br * 0.012 }); drawPaint("brussard", cx - 7, sy, 31, 1, { sy: 1 - br * 0.012 });
+    }
     else if (isUnlocked()) { drawSpr("brussardBig", cx - 7, sy); drawSpr("angelleBig", cx + 7, sy, true); }
     else { b.drawImage(SPR.lockedBig.n, Math.round(cx - 19), sy - 32); b.drawImage(SPR.lockedBig2.n, Math.round(cx - 5), sy - 32); text("???", cx, sy - 21, "#9b6ad6", 1, "c"); }
     const n1 = K ? K.first : isUnlocked() ? "BRUSSARD" : "???", n2 = K ? K.last : isUnlocked() ? "ANGELLE" : "LOCKED";
@@ -967,7 +1297,7 @@ function drawLevelUp() {
   cards.forEach((k, i) => {
     const u = UPG[k], x = gap + i * (cwid + gap), cx = x + cwid / 2, gen = GENERIC.includes(k);
     button("card" + i, x, y, cwid, chh, !gen);
-    drawSpr("iconBig_" + u.item, cx, y + 22);
+    if (IMG.chars) drawSoft("iconBig_" + u.item, cx, y + 22); else drawSpr("iconBig_" + u.item, cx, y + 22);
     text(u.name, cx, y + 26, gen ? "#c8c6d8" : "#ffa43a", 1, "c");
     wrap(u.fx, cwid - 4).forEach((l, j) => text(l, cx, y + 36 + j * 9, "#f4f0e8", 1, "c"));
     if (!gen) text("LV" + (itemLv(u.item) + 1), cx, y + chh - 11, "#5fae4e", 1, "c");
@@ -1014,8 +1344,7 @@ function draw() {
   else { drawWorld(); if (scene !== "end" && scene !== "cleared") drawHUD(); if (scene === "levelup") drawLevelUp(); else if (scene === "cleared") drawCleared(); else if (scene === "end") drawEnd(); }
   if (paused) { dim(0.5); text("PAUSED", BW / 2, HERO_Y - 4, "#f4f0e8", 2, "c"); }
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.imageSmoothingEnabled = false;
-  const k = S * dpr();
-  ctx.drawImage(buf, 0, 0, BW, BH, 0, 0, Math.round(BW * k), Math.round(BH * k));
+  ctx.drawImage(buf, 0, 0);                    // 1:1, the buffer is already at screen resolution
 }
 
 // ================= LOOP (fixed 60 updates per second) =================
@@ -1026,7 +1355,8 @@ function frame(now) {
   const dtm = now - last; last = now;
   FT.push(dtm); if (FT.length > 30) FT.shift(); fps = 1000 / (FT.reduce((a, c) => a + c, 0) / FT.length);
   const t0 = performance.now();
-  if (!paused) { acc += Math.min(dtm, 100); let n = 0; while (acc >= 1000 / 60 && n++ < 5) { update(1 / 60); acc -= 1000 / 60; } if (n >= 5) acc = 0; } else acc = 0;
+  if (hitstop > 0 && !paused) { hitstop -= Math.min(dtm, 100) / 1000; acc = 0; }
+  else if (!paused) { acc += Math.min(dtm, 100); let n = 0; while (acc >= 1000 / 60 && n++ < 5) { update(1 / 60); acc -= 1000 / 60; } if (n >= 5) acc = 0; } else acc = 0;
   if (cw) draw();
   frameMs = frameMs * 0.9 + (performance.now() - t0) * 0.1;
   requestAnimationFrame(frame);
@@ -1053,15 +1383,19 @@ window.__gs = () => {
     layout: { w: cw, h: ch, scale: +S.toFixed(3), buffer: [BW, BH], safeY: SAFE_Y * S, uiBottom: uiBottom * S, heroY: HERO_Y * S },
     unlock: { beaten: beaten.slice(), unlocked: isUnlocked(), justUnlocked, storage: storageOK, dev: DEV_UNLOCK },
     end: endInfo ? { ...endInfo } : null,
+    art: { painted: Object.fromEntries(Object.keys(IMG_SRC).map(k => [k, IMG_STATE[k] === "ok" && !!IMG[k] && IMG[k].naturalWidth > 0])), world: paintedWorld() ? "painted" : "pixel", ground: paintedWorld() || "pixel", res: +RES.toFixed(2),
+      state: { ...IMG_STATE }, lazy: lazyStarted, drawn: { world: DRAWN.world, mons: Object.keys(DRAWN.mons), boss: DRAWN.boss, hero: DRAWN.hero } },
     flags: { seed: SEED, fast: FAST, god: GOD, stress: STRESS, frail: FRAIL, testBuild: TEST_BUILD, unlockSwitch: DEV_UNLOCK },
     sound: { on: soundOn, ctx: ac ? ac.state : null, music: music ? { paused: music.paused, muted: music.muted, time: music.currentTime } : null },
   };
 };
 
-draw();
-document.getElementById("loading").classList.add("off");
-window.__ready = true;
-requestAnimationFrame(frame);
+loadPainted(() => {
+  draw();
+  document.getElementById("loading").classList.add("off");
+  window.__ready = true;
+  requestAnimationFrame(frame);
+});
 </script>
 </body>
 </html>
