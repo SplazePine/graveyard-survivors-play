@@ -23,13 +23,14 @@
   #mute{right:2px}
   #open{left:2px;display:none}
   html.framed #open{display:flex}
+  html.hud-off .ctl{display:none!important}   /* H key: the HUD AND the corner buttons hide (for clean promo videos) */
 </style>
 </head>
 <body>
 <div id="loading">Graveyard Survivors<div class="dot"></div><div id="lp" style="font-size:12px;margin-top:10px;color:#9b6ad6"></div></div>
 <canvas id="c" tabindex="0" aria-label="Graveyard Survivors. Move with WASD, arrows, mouse or drag. Weapons attack by themselves."></canvas>
 <button id="mute" class="ctl" data-control aria-label="Sound" aria-pressed="false">🔊</button>
-<a id="open" class="ctl" data-control href="game.html?v=3" aria-label="Open the game in a new tab">↗</a>
+<a id="open" class="ctl" data-control href="game.html?v=4" aria-label="Open the game in a new tab">↗</a>
 <script>
 "use strict";
 // =====================================================================
@@ -47,11 +48,15 @@ const FAST = Q.get("fast") === "1", GOD = Q.get("god") === "1", STRESS = Q.get("
 // of game.html, so real players unlock Brussard & Angelle only by beating Big Beelz with BOTH keepers.
 // The switch never writes to localStorage.
 const TEST_BUILD = false;
-let DEV_UNLOCK = false, START_HP = 0;
+let DEV_UNLOCK = false, START_HP = 0, FORCE_DROP = "";
 
+// ?drop= (robot build only): "big" = every normal kill drops a big candy, "crossN" = the Nth normal kill (and every Nth after) also drops a Cross.
 let SEED = parseInt(Q.get("seed"), 10); if (!Number.isFinite(SEED)) SEED = (Math.random() * 1e9) | 0;
 function mulberry(a) { return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 let rng = mulberry(SEED);
+// drops-v1: the big candy + Cross rolls use their OWN seeded rng, so the game's rng (spawns, cards, apples) gets the same
+// calls per kill as v0.3 and a seed still replays the same; the apple keeps its one roll on the game's rng, as before.
+let dropRng = mulberry(SEED ^ 0x5eed1);
 const rnd = (a, b) => a + (b - a) * rng();
 const fx = Math.random;                         // looks only (particles), never gameplay
 const TAU = Math.PI * 2, clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -79,7 +84,7 @@ function loadImg(k, src, cb) {
   const im = new Image(); im.decoding = "async"; IMG_STATE[k] = "loading";
   im.onload = () => { IMG[k] = im; IMG_STATE[k] = "ok"; if (k === "chars" || k === "mobs") cutSheet(k); cb(true); };
   im.onerror = () => { IMG_STATE[k] = "error"; cb(false); };
-  im.src = src + "?v=3";
+  im.src = src + "?v=4";
 }
 let lazyStarted = false;
 function loadLazy() { if (lazyStarted) return; lazyStarted = true; for (const k of Object.keys(LAZY_SRC)) loadImg(k, LAZY_SRC[k], () => {}); }
@@ -308,8 +313,10 @@ const ROUND_LEN = FAST ? 4 : 50, BOSS_HP = FAST ? 0.05 : 1, CAP = 150;
 const EN = [], CANDY = [], PART = [], POPS = [], SHOTS = [], APPLES = [], PELLETS = [];
 for (let i = 0; i < 80; i++) PELLETS.push({ on: false });
 for (let i = 0; i < 8; i++) APPLES.push({ on: false });
+const CROSSES = []; for (let i = 0; i < 4; i++) CROSSES.push({ on: false });   // the rare Cross pickup (pulls every Soul Candy on the map)
 for (let i = 0; i < CAP; i++) EN.push({ on: false });
 for (let i = 0; i < 260; i++) CANDY.push({ on: false });
+
 for (let i = 0; i < 320; i++) PART.push({ on: false });
 for (let i = 0; i < 24; i++) POPS.push({ on: false });
 for (let i = 0; i < 160; i++) SHOTS.push({ on: false });
@@ -333,6 +340,10 @@ let scene = "title", sceneT = 0, phase = "waves", keeper = "mort", round = 1, ro
 let P = null, boss = null, cards = [], pendingLv = 0, shake = 0, banner = null, phaseT = 0, cam = { x: 0, y: 0 }, swings = [], lashes = [], endInfo = null;
 const STATS = { pellets: 0, pelletHits: 0, crossHits: 0, healed: 0 };
 let apples = 0, paused = false, ticks = 0, alive = 0, spawnAcc = 0, selectMsg = null, vacuum = false;
+// drops-v1: big Soul Candy (5%, double XP) and the Cross pickup (1%, a vacuum for every candy on the map)
+const BIG_P = 0.05, APPLE_P = 0.02, CROSS_P = 0.01, CROSS_LIFE = 20;
+const DROPS = { rolls: 0, big: 0, cross: 0, apple: 0, merged: 0 };
+let bigGot = 0, bigXp = 0, bigBase = 0, crossGot = 0, xpGot = 0, xpDropped = 0, VAC = null, vacId = 0, sweep = { on: false, t: 0, x: 0, y: 0 };
 const STORE = "graveyard-survivors-v1-beaten";
 let storageOK = true, beaten = [], justUnlocked = false;
 try { const v = JSON.parse(localStorage.getItem(STORE) || "[]"); if (Array.isArray(v)) beaten = v.filter(k => KEEPERS[k]); } catch (e) { storageOK = false; }
@@ -354,8 +365,9 @@ function newPlayer(k) {
          cross: { dmg: 4, radius: 20, tick: 0.55, heal: 1, t: 0, pulse: 0, n: 0 } } };
 }
 function startRun(k) {
-  keeper = k; rng = mulberry(SEED); P = newPlayer(k);
-  for (const a of [EN, CANDY, PART, POPS, SHOTS, APPLES, PELLETS]) for (const o of a) o.on = false;
+  keeper = k; rng = mulberry(SEED); dropRng = mulberry(SEED ^ 0x5eed1); P = newPlayer(k);
+  for (const a of [EN, CANDY, PART, POPS, SHOTS, APPLES, PELLETS, CROSSES]) for (const o of a) o.on = false;
+  DROPS.rolls = DROPS.big = DROPS.cross = DROPS.apple = DROPS.merged = 0; bigGot = bigXp = bigBase = crossGot = xpGot = xpDropped = 0; VAC = null; sweep.on = false;
   apples = 0; STATS.pellets = 0; STATS.pelletHits = 0; STATS.crossHits = 0; STATS.healed = 0;
   boss = null; swings = []; lashes = []; round = 1; roundT = 0; runT = 0; kills = 0; candyGot = 0; pendingLv = 0; spawnAcc = 0;
   phase = "waves"; phaseT = 0; shake = 0; vacuum = false; justUnlocked = false; endInfo = null;
@@ -394,7 +406,7 @@ function startSound() {                 // runs INSIDE a tap (pointerup / touche
   if (soundOn) { if (music && music.paused && !document.hidden) music.play().catch(() => {}); return; }
   soundOn = true;
   try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (e) {}
-  music = new Audio("music.wav?v=3"); music.loop = true; music.volume = 0.3; music.muted = muted; music.setAttribute("playsinline", "");
+  music = new Audio("music.wav?v=4"); music.loop = true; music.volume = 0.3; music.muted = muted; music.setAttribute("playsinline", "");
   music.play().catch(() => {});
   try { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = muted ? 0 : 0.5; master.connect(ac.destination); ac.resume(); } catch (e) { ac = null; }
 }
@@ -426,6 +438,8 @@ function sfx(name) {
     else if (name === "hit") { tone(220, 120, 0.04, "triangle", 0.06); noise(0.03, 2400, 0.05); }   // tick + crisp click
     else if (name === "kill") { tone(600, 200, 0.06, "square", 0.04); tone(120, 50, 0.09, "sine", 0.1); noise(0.07, 1200, 0.07); }   // + bass thump + crunch
     else if (name === "candy") tone(900, 1500, 0.05, "sine", 0.05);
+    else if (name === "bigcandy") { tone(1200, 2400, 0.08, "triangle", 0.07); tone(1800, 3200, 0.07, "sine", 0.05, 0.05); }   // brighter, two notes
+    else if (name === "cross") { [784, 988, 1175, 1568].forEach((f, i) => tone(f, f * 1.01, 0.42, "sine", 0.045, i * 0.035)); noise(0.3, 5200, 0.05); tone(300, 1200, 0.3, "triangle", 0.03); }   // a holy chord + whoosh
     else if (name === "hurt") { tone(160, 60, 0.15, "sawtooth", 0.09); noise(0.1, 500, 0.08); }
     else if (name === "level") { tone(523, 523, 0.08, "square", 0.06); tone(659, 659, 0.08, "square", 0.06, 0.08); tone(784, 784, 0.14, "square", 0.06, 0.16); }
     else if (name === "boss") tone(110, 45, 0.7, "sawtooth", 0.12);
@@ -485,11 +499,21 @@ function press(id) {
     if (id === "again") startRun(keeper); else if (id === "change") setScene("select");
   }
 }
+// HUD toggle (H key): hides the whole HUD and the corner buttons. Drawing only: never gameplay, never the rng.
+// Shown by default; remembered for this browser session only (sessionStorage, if the frame allows it). No URL flag.
+let hudHidden = false, hudStored = true;
+try { hudHidden = sessionStorage.getItem("gs-hud-hidden") === "1"; } catch (e) { hudStored = false; }
+function setHud(hide) {
+  hudHidden = hide; document.documentElement.classList.toggle("hud-off", hide);
+  try { if (hide) sessionStorage.setItem("gs-hud-hidden", "1"); else sessionStorage.removeItem("gs-hud-hidden"); } catch (e) { hudStored = false; }
+}
+setHud(hudHidden);
 const MOVE_KEYS = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "Space"];
 addEventListener("keydown", e => {
   if (MOVE_KEYS.includes(e.code)) e.preventDefault();      // stop the X page from scrolling
   keys.add(e.code);
   if (e.repeat) return;
+  if (e.code === "KeyH" && scene !== "title") { setHud(!hudHidden); return; }
   const n = { Digit1: 1, Digit2: 2, Digit3: 3, Numpad1: 1, Numpad2: 2, Numpad3: 3 }[e.code];
   if (scene === "title") setScene("select");
   else if (scene === "select" && n) press(["mort", "granny", "secret"][n - 1]);
@@ -556,16 +580,31 @@ function kill(e) {
   burst(e.x, e.y - 3, e.boss ? 40 : 7, e.type === "wisp" ? "#6fd6e8" : e.type === "gourd" ? "#ffa43a" : e.type === "shambler" ? "#5fae4e" : "#9b6ad6");
   if (e.boss) { bossDown(e); return; }
   e.on = false; sfx("kill"); killsTick++; deathFx(e); shake = Math.max(shake, 0.8);
-  dropCandy(e.x, e.y, e.xp);
-  if (rng() < 0.02) { const a = APPLES.find(o => !o.on); if (a) Object.assign(a, { on: true, x: e.x + 4, y: e.y }); }   // Caramel Apple: a rare heal
+  const d = rollDrops(dropRng, rng);
+  
+  DROPS.rolls++; if (d.big) DROPS.big++; if (d.apple) DROPS.apple++; if (d.cross) DROPS.cross++;
+  dropCandy(e.x, e.y, d.big ? e.xp * 2 : e.xp, d.big, e.xp);                     // big Soul Candy: double this monster's XP, INSTEAD of the normal one
+  if (d.apple) { const a = APPLES.find(o => !o.on); if (a) Object.assign(a, { on: true, x: e.x + 4, y: e.y }); }   // Caramel Apple: a rare heal
+  if (d.cross) { const c = CROSSES.find(o => !o.on); if (c) Object.assign(c, { on: true, x: e.x - 4, y: e.y, life: CROSS_LIFE }); }   // the Cross: an EXTRA drop
 }
-function dropCandy(x, y, v) {
+// The drop rolls for one normal kill: big + Cross on the seeded drop rng, the apple on the game's rng (so a seed replays the same drops).
+function rollDrops(r, ra = r) { const big = r() < BIG_P, cross = r() < CROSS_P, apple = ra() < APPLE_P; return { big, apple, cross }; }   // r = drop rng, ra = the game's rng (apple)
+function dropCandy(x, y, v, big, base) {
+  xpDropped += v; if (base == null) base = v;
   let c = CANDY.find(o => !o.on);
-  if (!c) {   // pool full: merge into the nearest candy so XP is never lost
+  if (!c) {   // pool full: merge into the nearest candy so XP is never lost (a candy already flying to a Cross keeps its flight, and its Cross counts the extra)
     let best = null, bd = 1e9; for (const o of CANDY) { const d = (o.x - x) ** 2 + (o.y - y) ** 2; if (d < bd) { bd = d; best = o; } }
-    best.v += v; return;
+    DROPS.merged++; best.v += v; best.base += base; best.big = best.big || !!big; if (VAC && best.vac === VAC.id) VAC.value += v; return;
   }
-  Object.assign(c, { on: true, x, y, v, pull: false, sp: 0 });
+  Object.assign(c, { on: true, x, y, v, base, big: !!big, pull: false, sp: 0, vac: 0 });
+}
+// Touching a Cross: every Soul Candy on the map flies to the keeper and gets collected (a fast magnet to all).
+function crossVacuum() {
+  VAC = { id: ++vacId, t: runT, n: 0, value: 0, gotN: 0, got: 0, done: null };
+  for (const c of CANDY) if (c.on) { c.pull = true; c.vac = VAC.id; c.sp = Math.max(c.sp, 140); VAC.n++; VAC.value += c.v; }
+  if (!VAC.n) VAC.done = 0;
+  crossGot++; sweep = { on: true, t: 0, x: P.x, y: P.y - 6 };
+  sfx("cross"); ring(P.x, P.y - 6, 34, "#fff2b0"); burst(P.x, P.y - 10, 14, "#ffe9a0"); shake = Math.max(shake, 2);
 }
 function hurtPlayer(d) {
   if (P.inv > 0 || phase === "dying" || phase === "won" || phase === "clearing") return;
@@ -843,9 +882,20 @@ function update(dt) {
     if (!c.on) continue;
     const dx = P.x - c.x, dy = P.y - 4 - c.y, d = Math.hypot(dx, dy) || 1;
     if (vacuum || d < mr) c.pull = true;
-    if (c.pull) { c.sp = Math.min(c.sp + 400 * dt, 260); const st = Math.min(d, c.sp * dt); c.x += dx / d * st; c.y += dy / d * st; }
-    if (d < 7) { c.on = false; candyGot++; P.xp += c.v; sfx("candy"); }
+    if (c.pull) { c.sp = c.vac ? Math.min(c.sp + 1500 * dt, 680) : Math.min(c.sp + 400 * dt, 260); const st = Math.min(d, c.sp * dt); c.x += dx / d * st; c.y += dy / d * st; }
+    if (d < 7) {
+      c.on = false; candyGot++; P.xp += c.v; xpGot += c.v;
+      if (c.big) { bigGot++; bigXp += c.v; bigBase += c.base; sfx("bigcandy"); burst(c.x, c.y - 3, 5, "#ffe9a0"); } else sfx("candy");
+      if (VAC && c.vac === VAC.id) { VAC.gotN++; VAC.got += c.v; if (VAC.gotN >= VAC.n && VAC.done == null) VAC.done = +(runT - VAC.t).toFixed(3); }
+    }
   }
+  for (const k of CROSSES) if (k.on) {    // the Cross pickup: a small magnet (like the apple), fades out after CROSS_LIFE seconds
+    if ((k.life -= dt) <= 0) { k.on = false; continue; }
+    const d = Math.hypot(P.x - k.x, P.y - 4 - k.y);
+    if (d < mr * 0.6) { const st = Math.min(d, 120 / 60); k.x += (P.x - k.x) / (d || 1) * st; k.y += (P.y - 4 - k.y) / (d || 1) * st; }
+    if (d < 9) { k.on = false; crossVacuum(); }
+  }
+  if (sweep.on && (sweep.t += dt) > 0.6) sweep.on = false;
   for (const a of APPLES) if (a.on) {
     const d = Math.hypot(P.x - a.x, P.y - 4 - a.y);
     if (d < mr * 0.6) { const st = Math.min(d, 120 / 60); a.x += (P.x - a.x) / (d || 1) * st; a.y += (P.y - 4 - a.y) / (d || 1) * st; }
@@ -890,6 +940,50 @@ const hash = (x, y) => { let h = Math.imul(x, 374761393) + Math.imul(y, 66826526
 const DECOR = ["tomb", "tomb", "cross", "fence", "tuft", "tuft", "bones", "pumpkin"];
 // New Orleans look (only when Brussard & Angelle are picked): above-ground tombs, wrought iron, oaks with Spanish moss
 const DECOR_NOLA = ["vault", "vault", "ironfence", "mossoak", "tomb", "tuft", "tuft", "pumpkin"];
+// One cached gold-white glow (drawn once, then only scaled + faded): far cheaper than a new gradient per candy per frame.
+let GLOW_IMG = null; const BIGV = [];
+function glowImg() {
+  if (GLOW_IMG) return GLOW_IMG;
+  const c = document.createElement("canvas"); c.width = c.height = 64; const g = c.getContext("2d"), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, "rgba(255,251,225,0.95)"); gr.addColorStop(0.42, "rgba(255,208,95,0.45)"); gr.addColorStop(1, "rgba(255,185,65,0)");
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64); return (GLOW_IMG = c);
+}
+function twinkle(x, y, r) { b.fillStyle = "rgba(255,255,240,0.9)"; b.beginPath(); twinklePath(x, y, r); b.fill(); }
+function twinklePath(x, y, r) {   // a 4-point sparkle (only the path, so many can share one fill)
+  b.moveTo(x, y - r * 2); b.lineTo(x + r * 0.4, y - r * 0.4); b.lineTo(x + r * 2, y); b.lineTo(x + r * 0.4, y + r * 0.4);
+  b.lineTo(x, y + r * 2); b.lineTo(x - r * 0.4, y + r * 0.4); b.lineTo(x - r * 2, y); b.lineTo(x - r * 0.4, y - r * 0.4); b.closePath();
+}
+// The Cross body (outline, gold gradient, shine), cached at the screen's sharpness; rebuilt only if RES changes.
+let CROSS_IMG = null;
+function crossImg() {
+  const k = Math.max(2, Math.ceil(RES)); if (CROSS_IMG && CROSS_IMG.k === k) return CROSS_IMG.c;
+  const H = 20, T = 4.6, W = 14, c = mk((W + 4) * k, (H + 4) * k), g = c.getContext("2d"); g.scale(k, k); g.translate(W / 2 + 2, H / 2 + 2);
+  const ay = -H / 2 + H * 0.3, shape = o => { g.beginPath(); g.rect(-T / 2 - o, -H / 2 - o, T + o * 2, H + o * 2); g.rect(-W / 2 - o, ay - T / 2 - o, W + o * 2, T + o * 2); };
+  g.fillStyle = "#3a2208"; shape(0.9); g.fill();
+  const lg = g.createLinearGradient(-W / 2, -H / 2, W / 2, H / 2); lg.addColorStop(0, "#fffbe8"); lg.addColorStop(0.35, "#ffe27a"); lg.addColorStop(1, "#c9861e");
+  g.fillStyle = lg; shape(0); g.fill();
+  g.fillStyle = "rgba(255,255,255,0.85)"; g.fillRect(-T / 2 + 0.7, -H / 2 + 0.8, 1.3, H - 2); g.fillRect(-W / 2 + 0.8, ay - T / 2 + 0.7, W - 1.8, 1.2);
+  CROSS_IMG = { k, c }; return c;
+}
+// The Cross pickup (code-drawn, painted style): a floating golden-white cross with a dark outline, a soft halo, slow rays and a bob.
+// A standing cross shape off the ground, so it never reads as Angelle's holy-light pool around the pair or a stone grave cross.
+function drawCrossPickup(k) {
+  const bob = Math.sin(ticks * 0.07 + k.x) * 1.8, x = k.x, y = k.y - 13 + bob, pu = 0.5 + 0.5 * Math.sin(ticks * 0.12);
+  const fade = k.life < 3 ? (((ticks >> 3) & 1) ? 0.35 : 1) : 1;      // blinks in its last 3 s, then is gone
+  b.globalAlpha = fade;
+  softShadow(x, k.y + 2, 13 - bob * 0.6, 0.4);
+  b.globalCompositeOperation = "lighter";
+  const hr = 24 + 4 * pu;
+  b.globalAlpha = fade * (0.6 + 0.2 * pu); b.drawImage(glowImg(), x - hr, y - hr, hr * 2, hr * 2); b.globalAlpha = fade;
+  b.strokeStyle = `rgba(255,236,170,${0.22 + 0.12 * pu})`; b.lineWidth = 1.2; b.beginPath();   // 6 slow light rays (one path)
+  for (let i = 0; i < 6; i++) { const a = ticks * 0.012 + i * TAU / 6; b.moveTo(x + Math.cos(a) * 10, y + Math.sin(a) * 10); b.lineTo(x + Math.cos(a) * (21 + 4 * pu), y + Math.sin(a) * (21 + 4 * pu)); }
+  b.stroke();
+  b.globalCompositeOperation = "source-over";
+  const H = 20, W = 14;                                        // the cross itself: drawn once into a small sharp canvas, then only placed
+  b.save(); b.imageSmoothingEnabled = true; b.drawImage(crossImg(), x - W / 2 - 2, y - H / 2 - 2, W + 4, H + 4); b.restore();
+  twinkle(x + 7, y - H / 2 + 1 + pu, 1.5 + pu);
+  b.globalAlpha = 1;
+}
 function drawSpr(key, x, y, flipX, white) {   // x,y = feet centre
   const s = SPR[key]; if (!s) return;
   b.drawImage(white ? (flipX ? s.wf : s.w) : (flipX ? s.f : s.n), Math.round(x - s.W / 2), Math.round(y - s.H));
@@ -950,7 +1044,35 @@ function drawWorld() {
     b.translate(ox, oy); fogLayer(0.6, 0.22, 4, 150); b.translate(-ox, -oy);   // ground fog drifts UNDER the actors
   }
   for (const a of APPLES) if (a.on) { const bob = Math.abs(Math.sin(ticks * 0.06)) * 1.2; if (PS.apple) { softShadow(a.x, a.y + 2, 6); drawPaint("apple", a.x, a.y + 2 - bob, 8, -1); } else if (painted) { softShadow(a.x, a.y + 2, 6); drawSoft("apple", a.x, a.y + 2 - bob); } else drawSpr("apple", a.x, a.y + 2 - ((ticks >> 4) & 1)); }
-  for (const c of CANDY) if (c.on) {
+  for (const k of CROSSES) if (k.on) drawCrossPickup(k);
+  // Perf (150-monster stress): off-screen big candies and streaks are skipped, and all streaks / glows / twinkles are
+  // batched (one path, or one blend switch, for all of them), so the drops cost almost nothing per frame.
+  const onScr = c => { const vx = c.x - cam.x, vy = c.y - cam.y; return vx > -28 && vx < BW + 28 && vy > -36 && vy < BH + 28; };
+  BIGV.length = 0; let streaks = 0;
+  for (const c of CANDY) if (c.on && onScr(c)) { if (c.big) BIGV.push(c); if (c.vac && c.pull) streaks++; }
+  if (streaks) for (const wide of [false, true]) {             // candies flying to a Cross leave a short gold streak
+    b.strokeStyle = "rgba(255,226,140,0.55)"; b.lineWidth = wide ? 2 : 1.2; b.beginPath();
+    for (const c of CANDY) if (c.on && c.vac && c.pull && !!c.big === wide && onScr(c)) {
+      const dx = P.x - c.x, dy = P.y - 4 - c.y, d = Math.hypot(dx, dy) || 1, L = Math.min(10, c.sp * 0.02);
+      b.moveTo(c.x, c.y - 1); b.lineTo(c.x - dx / d * L, c.y - 1 - dy / d * L);
+    }
+    b.stroke();
+  }
+  if (BIGV.length) {                                           // BIG Soul Candy: candy3 scaled up, a pulsing gold-white glow and a twinkle
+    const gi = glowImg(), hs = 11, pu = c => 0.5 + 0.5 * Math.sin(ticks * 0.16 + c.x), yy = c => c.y + 2 + Math.sin(ticks * 0.08 + c.x) * 1.1;
+    b.globalCompositeOperation = "lighter";
+    for (const c of BIGV) { const p = pu(c), gr = hs * (1.5 + 0.45 * p); b.globalAlpha = 0.5 + 0.3 * p; b.drawImage(gi, c.x - gr, yy(c) - hs / 2 - gr, gr * 2, gr * 2); }
+    b.globalAlpha = 1; b.globalCompositeOperation = "source-over";
+    for (const c of BIGV) {
+      const y = yy(c); softShadow(c.x, c.y + 2, 8, 0.35);
+      if (PS.candy3) drawPaint("candy3", c.x, y, hs, (c.x | 0) & 1 ? 1 : -1, { rot: Math.sin(ticks * 0.05 + c.y) * 0.15 });
+      else { b.save(); b.translate(c.x, y); b.scale(1.7, 1.7); if (painted) drawSoft("candy3", 0, 0); else drawSpr("candy3", 0, 0); b.restore(); }
+    }
+    b.fillStyle = "rgba(255,255,240,0.9)"; b.beginPath();
+    for (const c of BIGV) twinklePath(c.x + Math.cos(ticks * 0.05) * 5, yy(c) - hs * 0.6 + Math.sin(ticks * 0.05) * 3, 1.6 + pu(c));
+    b.fill();
+  }
+  for (const c of CANDY) if (c.on && !c.big) {
     const k = c.v >= 8 ? "candy3" : c.v >= 3 ? "candy2" : "candy1", yy = c.y + 2 + Math.sin(ticks * 0.08 + c.x) * 0.8;
     if (PS[k]) { const hs = c.v >= 8 ? 7 : c.v >= 3 ? 6 : 5, gc = c.v >= 8 ? "255,200,80" : c.v >= 3 ? "150,120,255" : "120,240,120", gl = b.createRadialGradient(c.x, yy - hs / 2, 0, c.x, yy - hs / 2, hs * 1.3);
       gl.addColorStop(0, `rgba(${gc},0.35)`); gl.addColorStop(1, `rgba(${gc},0)`); b.fillStyle = gl; b.fillRect(c.x - hs * 1.3, yy - hs / 2 - hs * 1.3, hs * 2.6, hs * 2.6);
@@ -1097,6 +1219,12 @@ function drawWorld() {
     b.strokeStyle = k < 0.5 ? "rgba(255,255,255,0.9)" : r.color; b.lineWidth = 1.2 * (1 - k) + 0.3; b.globalAlpha = 1 - k;
     b.beginPath(); b.ellipse(r.x, r.y, 2 + r.r1 * k, (2 + r.r1 * k) * 0.7, 0, 0, TAU); b.stroke(); b.globalAlpha = 1;
   }
+  if (sweep.on) {                                // the Cross sweep: a gold-white flash + a wave that rolls out over the whole screen
+    const k = sweep.t / 0.6, r = 6 + k * Math.max(BW, BH) * 0.9;
+    if (k < 0.3) { b.globalCompositeOperation = "lighter"; b.globalAlpha = 0.6 * (1 - k / 0.3); b.drawImage(glowImg(), sweep.x - 40, sweep.y - 40, 80, 80); b.globalAlpha = 1; b.globalCompositeOperation = "source-over"; }
+    b.strokeStyle = `rgba(255,236,170,${0.75 * (1 - k)})`; b.lineWidth = 4 * (1 - k) + 0.5; b.beginPath(); b.ellipse(sweep.x, sweep.y, r, r * 0.72, 0, 0, TAU); b.stroke();
+    b.strokeStyle = `rgba(255,255,240,${0.4 * (1 - k)})`; b.lineWidth = 1; b.beginPath(); b.ellipse(sweep.x, sweep.y, r * 0.82, r * 0.82 * 0.72, 0, 0, TAU); b.stroke();
+  }
   for (const p of PART) if (p.on) {
     if (p.g) { b.fillStyle = "rgba(6,3,12,0.45)"; b.fillRect(p.x, p.y + 1, p.size, 0.8); }
     b.fillStyle = p.color; b.globalAlpha = Math.min(1, p.life * 4);
@@ -1146,6 +1274,7 @@ function drawHero() {
 function bar(x, y, w, h, f, fg, bg) { b.fillStyle = "#140c1c"; b.fillRect(x - 1, y - 1, w + 2, h + 2); b.fillStyle = bg; b.fillRect(x, y, w, h); b.fillStyle = fg; b.fillRect(x, y, Math.round(w * clamp(f, 0, 1)), h); if (trackUI) uiBottom = Math.max(uiBottom, y + h + 1); }
 const mmss = t => { t = Math.max(0, Math.ceil(t)); return (t / 60 | 0) + ":" + String(t % 60).padStart(2, "0"); };
 function drawHUD() {
+  if (hudHidden) { drawJoy(); return; }     // H: no HUD at all (the touch joystick ring still shows while dragging)
   trackUI = true;
   const mid = BW / 2;
   text(round >= 4 ? "FINAL BOSS" : "ROUND " + round + "/3", mid, 2, "#c8c6d8", 1, "c");
@@ -1171,12 +1300,15 @@ function drawHUD() {
     b.globalAlpha = Math.min(1, banner.t * 2);
     text(banner.big, mid, y2, "#ffa43a", sc, "c"); text(banner.small, mid, y2 + 7 * sc + 4, "#f4f0e8", 1, "c"); b.globalAlpha = 1;
   }
+  drawJoy();
+  trackUI = false;
+}
+function drawJoy() {
   if (joy.on) {                       // joystick ring, always drawn above the bottom-30% line
     const jx = clamp(joy.ox, 20, BW - 20), jy = Math.min(joy.oy, SAFE_Y - 20), dx = clamp(joy.x - joy.ox, -18, 18), dy = clamp(joy.y - joy.oy, -18, 18);
     b.globalAlpha = 0.5; b.drawImage(aura(18), jx - 18, jy - 18); b.globalAlpha = 0.9;
     b.fillStyle = "#f4f0e8"; b.fillRect(Math.round(jx + dx) - 3, Math.round(jy + dy) - 3, 6, 6); b.globalAlpha = 1;
   }
-  trackUI = false;
 }
 function panel(x, y, w, h, fill, edge) { b.fillStyle = "#140c1c"; b.fillRect(x - 1, y - 1, w + 2, h + 2); b.fillStyle = edge; b.fillRect(x, y, w, h); b.fillStyle = fill; b.fillRect(x + 1, y + 1, w - 2, h - 2); if (trackUI) uiBottom = Math.max(uiBottom, y + h + 1); }
 function button(id, x, y, w, h, hot) { btns.push({ id, x, y, w, h }); panel(x, y, w, h, hot ? "rgba(70,40,105,0.88)" : "rgba(30,18,44,0.82)", hot ? "#ffe066" : "#9b6ad6"); }
@@ -1362,6 +1494,7 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+
 // ================= TEST HOOK (read-only: it only reports, it can't change the game) =================
 window.__gs = () => {
   const css = (x, y) => [Math.round((x - cam.x) * S), Math.round((y - cam.y) * S)];
@@ -1385,7 +1518,12 @@ window.__gs = () => {
     end: endInfo ? { ...endInfo } : null,
     art: { painted: Object.fromEntries(Object.keys(IMG_SRC).map(k => [k, IMG_STATE[k] === "ok" && !!IMG[k] && IMG[k].naturalWidth > 0])), world: paintedWorld() ? "painted" : "pixel", ground: paintedWorld() || "pixel", res: +RES.toFixed(2),
       state: { ...IMG_STATE }, lazy: lazyStarted, drawn: { world: DRAWN.world, mons: Object.keys(DRAWN.mons), boss: DRAWN.boss, hero: DRAWN.hero } },
-    flags: { seed: SEED, fast: FAST, god: GOD, stress: STRESS, frail: FRAIL, testBuild: TEST_BUILD, unlockSwitch: DEV_UNLOCK },
+    drops: { rolls: DROPS.rolls, big: DROPS.big, cross: DROPS.cross, apple: DROPS.apple, merged: DROPS.merged, bigGot, bigXp, bigBase, crossGot, xpGot, xpDropped, forced: FORCE_DROP,
+      ground: CANDY.reduce((a, c) => c.on ? { n: a.n + 1, v: a.v + c.v, big: a.big + (c.big ? 1 : 0) } : a, { n: 0, v: 0, big: 0 }),
+      crosses: CROSSES.filter(k => k.on).map(k => ({ x: +k.x.toFixed(1), y: +k.y.toFixed(1), life: +k.life.toFixed(2), screen: css(k.x, k.y - 8) })),
+      vac: VAC ? { ...VAC } : null, sweep: sweep.on, sweepT: sweep.on ? +sweep.t.toFixed(3) : null, pool: CANDY.length },
+    hud: { hidden: hudHidden, stored: hudStored, controls: [...document.querySelectorAll(".ctl")].map(el => getComputedStyle(el).display) },
+    flags: { seed: SEED, fast: FAST, god: GOD, stress: STRESS, frail: FRAIL, testBuild: TEST_BUILD, unlockSwitch: DEV_UNLOCK, drop: FORCE_DROP },
     sound: { on: soundOn, ctx: ac ? ac.state : null, music: music ? { paused: music.paused, muted: music.muted, time: music.currentTime } : null },
   };
 };
